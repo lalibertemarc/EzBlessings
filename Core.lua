@@ -183,7 +183,7 @@ btn.check:SetPoint("BOTTOMRIGHT", 4, -4)
 btn.check:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready")
 
 btn.label = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-btn.label:SetPoint("TOP", btn, "BOTTOM", 0, -3)
+btn.label:SetPoint("LEFT", btn, "RIGHT", 6, 0)
 
 local BORDER = {
     normal   = { 0, 0, 0 },

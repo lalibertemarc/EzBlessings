@@ -1,5 +1,9 @@
 # PallyBuff
 
+## v1.0.2
+
+- Blessing name now sits to the right of the icon so it no longer overlaps the target frame.
+
 ## v1.0.1
 
 - Salvation (group-only) is skipped for players outside your group; the next blessing in line is suggested instead.

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#2b3f8a"/>
+      <stop offset="1" stop-color="#090e24"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffc94d" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#ffc94d" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff0b0"/>
+      <stop offset="0.45" stop-color="#e5b94c"/>
+      <stop offset="1" stop-color="#8f5f17"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb3d6"/>
+      <stop offset="0.5" stop-color="#f58cba"/>
+      <stop offset="1" stop-color="#9c3d6b"/>
+    </linearGradient>
+    <linearGradient id="arrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffe08a"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <g fill="#f2b630" opacity="0.28">
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(0 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(22 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(45 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(67 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(90 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(112 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(135 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(157 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(180 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(202 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(225 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(247 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(270 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(292 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(315 200 205)"/>
+    <polygon points="200,205 186,-60 214,-60" transform="rotate(337 200 205)"/>
+  </g>
+  <circle cx="200" cy="205" r="170" fill="url(#glow)"/>
+  <path d="M105,100 Q200,78 295,100 L295,190 C295,265 245,305 200,328 C155,305 105,265 105,190 Z"
+        fill="url(#gold)" stroke="#3a2306" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M121,113 Q200,95 279,113 L279,190 C279,254 237,289 200,310 C163,289 121,254 121,190 Z"
+        fill="url(#pink)" stroke="#5a1f3c" stroke-width="3" stroke-linejoin="round"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M148,248 L200,200 L252,248 M148,190 L200,142 L252,190" stroke="#3d1228" stroke-width="34"/>
+    <path d="M148,248 L200,200 L252,248 M148,190 L200,142 L252,190" stroke="url(#arrow)" stroke-width="22"/>
+  </g>
+  <g fill="#fff6d0">
+    <path d="M330,80 l5,15 15,5 -15,5 -5,15 -5,-15 -15,-5 15,-5z"/>
+    <path d="M72,300 l4,11 11,4 -11,4 -4,11 -4,-11 -11,-4 11,-4z"/>
+    <path d="M80,92 l3,8 8,3 -8,3 -3,8 -3,-8 -8,-3 8,-3z"/>
+  </g>
+</svg>

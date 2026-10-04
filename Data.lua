@@ -11,6 +11,11 @@ ns.BLESSINGS = {
     SANCTUARY = { 20911, 25899 },
 }
 
+-- Blessings the game only lets you cast on yourself or party/raid members.
+ns.GROUP_ONLY = {
+    SALVATION = true,
+}
+
 -- Default (DPS / healer) priority by class. First entry = most wanted.
 ns.PRIORITY = {
     WARRIOR = { "MIGHT", "KINGS", "SALVATION", "LIGHT" },

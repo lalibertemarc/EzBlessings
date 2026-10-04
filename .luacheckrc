@@ -19,6 +19,6 @@ read_globals = {
     "C_Spell", "C_SpellBook", "C_UnitAuras", "C_Timer",
     -- Global APIs
     "GetSpellInfo", "GetSpellBookItemName", "UnitBuff", "UnitClass", "UnitName",
-    "UnitIsUnit", "UnitExists", "UnitIsPlayer", "UnitIsFriend", "UnitIsDeadOrGhost",
+    "UnitIsUnit", "UnitInParty", "UnitInRaid", "UnitExists", "UnitIsPlayer", "UnitIsFriend", "UnitIsDeadOrGhost",
     "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown",
 }

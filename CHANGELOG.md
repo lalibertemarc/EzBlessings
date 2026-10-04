@@ -7,3 +7,4 @@
 - Left-click casts the blessing, right-click casts the Greater version.
 - Skips blessings other paladins already cast and blessings you haven't learned; warns when yours is about to expire.
 - Tank priorities via `/pb tank <name>`.
+- Salvation (group-only) is skipped for players outside your group; the next blessing in line is suggested instead.

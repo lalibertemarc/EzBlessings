@@ -111,12 +111,18 @@ local function ScanBlessings(unit)
     return found
 end
 
--- Entry states: "missing", "expiring" (yours, about to drop), "mine", "other" (another paladin's), "unknown".
--- Result: { name, class, className, tank, list = {entries}, rec = entry to cast or nil, done = bool }
+local function InGroup(unit)
+    return UnitIsUnit(unit, "player") or UnitInParty(unit) or UnitInRaid(unit) ~= nil
+end
+
+-- Entry states: "missing", "expiring" (yours, about to drop), "mine", "other" (another paladin's),
+-- "unknown" (not learned), "nogroup" (group-only blessing, target not in your group).
+-- Result: { name, class, className, tank, grouped, list = {entries}, rec = entry to cast or nil, done = bool }
 local function Evaluate(unit)
     local className, class = UnitClass(unit)
     local r = { name = UnitName(unit), class = class, className = className, list = {}, done = false }
     r.tank = PallyBuffDB.tanks[UnitKey(unit)] == true
+    r.grouped = InGroup(unit)
 
     local prio = (r.tank and ns.TANK_PRIORITY[class]) or ns.PRIORITY[class] or ns.PRIORITY.WARRIOR
     local found = ScanBlessings(unit)
@@ -128,8 +134,12 @@ local function Evaluate(unit)
             state = (f.remaining and f.remaining <= ns.REFRESH_THRESHOLD) and "expiring" or "mine"
         elseif f then
             state = "other"
+        elseif not known[blessing[key].name] then
+            state = "unknown"
+        elseif ns.GROUP_ONLY[key] and not r.grouped then
+            state = "nogroup"
         else
-            state = known[blessing[key].name] and "missing" or "unknown"
+            state = "missing"
         end
         local e = { key = key, state = state, source = f and f.source, remaining = f and f.remaining }
         r.list[#r.list + 1] = e
@@ -210,6 +220,7 @@ local STATE_TEXT = {
     mine     = "|cff40ff40yours|r",
     other    = "|cff40ff40from %s|r",
     unknown  = "|cff808080not learned|r",
+    nogroup  = "|cff808080group only|r",
 }
 
 local function FormatTime(sec)
@@ -253,7 +264,8 @@ local function Update()
         local rec = current.rec
         local b = rec and blessing[rec.key]
         local spell = b and b.name
-        local greater = b and known[b.greater] and b.greater
+        -- Greater blessings only reach party/raid members.
+        local greater = b and current.grouped and known[b.greater] and b.greater
 
         -- Secure attributes can't change in combat; the button keeps its old spell until combat ends.
         if not inCombat then

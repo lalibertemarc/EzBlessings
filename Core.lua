@@ -24,10 +24,19 @@ local function SpellBookName(i)
     return (GetSpellBookItemName(i, BOOKTYPE_SPELL or "spell"))
 end
 
--- Returns name, sourceUnit, expirationTime of the i-th buff, or nil past the end.
+-- Forever's client hides aura data from addons in some situations (e.g. combat) as "secret" values.
+local issecret = issecretvalue or function() return false end
+
+local function AurasHidden()
+    return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
+end
+
+-- Returns name, sourceUnit, expirationTime of the i-th buff; nil past the end; false if auras are hidden.
 local function BuffAt(unit, i)
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-        local a = C_UnitAuras.GetAuraDataByIndex(unit, i, "HELPFUL")
+        -- Index access throws while auras are secret, so never call it bare.
+        local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, unit, i, "HELPFUL")
+        if not ok or issecret(a) then return false end
         if a then return a.name, a.sourceUnit, a.expirationTime end
     else
         local name, _, _, _, _, expires, source = UnitBuff(unit, i)
@@ -94,12 +103,15 @@ local function ValidTarget(unit)
         and not UnitIsDeadOrGhost(unit)
 end
 
+-- Returns key -> { mine, source, remaining } for blessings on the unit, or nil if auras are hidden.
 local function ScanBlessings(unit)
+    if AurasHidden() then return nil end
     local found, now = {}, GetTime()
     for i = 1, 40 do
         local name, source, expires = BuffAt(unit, i)
+        if name == false then return nil end
         if not name then break end
-        local key = nameToKey[name]
+        local key = not (issecret(name) or issecret(source) or issecret(expires)) and nameToKey[name]
         if key then
             found[key] = {
                 mine = source ~= nil and UnitIsUnit(source, "player"),
@@ -117,7 +129,8 @@ end
 
 -- Entry states: "missing", "expiring" (yours, about to drop), "mine", "other" (another paladin's),
 -- "unknown" (not learned), "nogroup" (group-only blessing, target not in your group).
--- Result: { name, class, className, tank, grouped, list = {entries}, rec = entry to cast or nil, done = bool }
+-- Result: { name, class, className, tank, grouped, hidden, list = {entries}, rec = entry to cast or nil, done = bool }
+-- hidden = auras couldn't be read, so the result is class priority only.
 local function Evaluate(unit)
     local className, class = UnitClass(unit)
     local r = { name = UnitName(unit), class = class, className = className, list = {}, done = false }
@@ -126,6 +139,8 @@ local function Evaluate(unit)
 
     local prio = (r.tank and ns.TANK_PRIORITY[class]) or ns.PRIORITY[class] or ns.PRIORITY.WARRIOR
     local found = ScanBlessings(unit)
+    r.hidden = found == nil
+    found = found or {}
 
     for _, key in ipairs(prio) do
         local f = found[key]
@@ -236,6 +251,10 @@ local function ShowTooltip()
     GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
     GameTooltip:AddLine(current.name, c.r, c.g, c.b)
     GameTooltip:AddLine(format("%s - %s", current.className or "?", current.tank and "Tank" or "DPS/Healer"), 0.8, 0.8, 0.8)
+    if current.hidden then
+        GameTooltip:AddLine("Buffs hidden by the game right now (combat).", 1, 0.5, 0.1)
+        GameTooltip:AddLine(current.stale and "Showing what was read before." or "Showing class priority only.", 1, 0.5, 0.1)
+    end
     GameTooltip:AddLine(" ")
     for i, e in ipairs(current.list) do
         local text = format(STATE_TEXT[e.state], e.source or "another paladin") .. FormatTime(e.remaining)
@@ -255,7 +274,14 @@ btn:SetScript("OnLeave", function(self) self.hover = false; GameTooltip:Hide() e
 ---------------------------------------------------------------------------
 local function Update()
     local inCombat = InCombatLockdown()
-    current = ValidTarget("target") and Evaluate("target") or nil
+    local r = ValidTarget("target") and Evaluate("target") or nil
+    local hasRealResult = current and (current.stale or not current.hidden)
+    if r and r.hidden and hasRealResult then
+        -- Can't read buffs now: keep the last real result for this target (cleared on target change).
+        current.hidden, current.stale = true, true
+    else
+        current = r
+    end
 
     if not current then
         btn:SetAlpha(0)
@@ -351,6 +377,7 @@ local ev = CreateFrame("Frame")
 ev:RegisterEvent("PLAYER_LOGIN")
 ev:SetScript("OnEvent", function(self, event, unit)
     if event == "UNIT_AURA" and unit ~= "target" then return end
+    if event == "PLAYER_TARGET_CHANGED" then current = nil end
     if event == "PLAYER_LOGIN" then
         -- Saved variables are loaded by now; only start listening once they exist.
         PallyBuffDB = PallyBuffDB or {}

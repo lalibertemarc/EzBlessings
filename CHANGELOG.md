@@ -1,5 +1,9 @@
 # PallyBuff
 
+## v1.0.3
+
+- Fixed "Auras cannot be accessed when secret" errors in combat. While the game hides buffs, PallyBuff keeps the last result for your target, or shows class priority for a target picked mid-fight, and refreshes when combat ends.
+
 ## v1.0.2
 
 - Blessing name now sits to the right of the icon so it no longer overlaps the target frame.

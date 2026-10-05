@@ -1,5 +1,10 @@
 # PallyBuff
 
+## v1.0.4
+
+- Tooltip role now matches the class: warriors, rogues, hunters, mages and warlocks show "DPS"; only healing classes show "DPS/Healer". Classes that can tank get a "Tanking? /pb tank" hint.
+- Might is now the last-resort blessing for Mage, Warlock, Priest, Druid and tank Paladin, so they get something instead of nothing.
+
 ## v1.0.3
 
 - Fixed "Auras cannot be accessed when secret" errors in combat. While the game hides buffs, PallyBuff keeps the last result for your target, or shows class priority for a target picked mid-fight, and refreshes when combat ends.

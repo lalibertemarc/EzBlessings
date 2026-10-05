@@ -36,11 +36,11 @@ World of Warcraft\_classic_beta_\Interface\AddOns\
 |---|---|
 | Warrior, Rogue | Might > Kings > Salvation > Light |
 | Hunter | Kings > Wisdom > Salvation > Might |
-| Mage, Warlock, Priest, Druid | Wisdom > Kings > Salvation > Light |
+| Mage, Warlock, Priest, Druid | Wisdom > Kings > Salvation > Light > Might |
 | Paladin | Wisdom > Kings > Might > Light |
 | Shaman | Wisdom > Kings > Might > Light |
 | Warrior, Druid (tank) | Kings > Might > Sanctuary > Light |
-| Paladin (tank) | Kings > Sanctuary > Wisdom > Light |
+| Paladin (tank) | Kings > Sanctuary > Wisdom > Light > Might |
 
 To change them, edit `Data.lua`.
 

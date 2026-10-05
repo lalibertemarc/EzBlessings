@@ -250,7 +250,11 @@ local function ShowTooltip()
     local c = RAID_CLASS_COLORS[current.class] or NORMAL_FONT_COLOR
     GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
     GameTooltip:AddLine(current.name, c.r, c.g, c.b)
-    GameTooltip:AddLine(format("%s - %s", current.className or "?", current.tank and "Tank" or "DPS/Healer"), 0.8, 0.8, 0.8)
+    local role = current.tank and "Tank" or ns.HEALER_CLASSES[current.class] and "DPS/Healer" or "DPS"
+    GameTooltip:AddLine(format("%s - %s", current.className or "?", role), 0.8, 0.8, 0.8)
+    if not current.tank and ns.TANK_PRIORITY[current.class] then
+        GameTooltip:AddLine("Tanking? /pb tank", 0.6, 0.6, 0.6)
+    end
     if current.hidden then
         GameTooltip:AddLine("Buffs hidden by the game right now (combat).", 1, 0.5, 0.1)
         GameTooltip:AddLine(current.stale and "Showing what was read before." or "Showing class priority only.", 1, 0.5, 0.1)

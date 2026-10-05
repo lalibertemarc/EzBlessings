@@ -21,19 +21,27 @@ ns.PRIORITY = {
     WARRIOR = { "MIGHT", "KINGS", "SALVATION", "LIGHT" },
     ROGUE   = { "MIGHT", "KINGS", "SALVATION", "LIGHT" },
     HUNTER  = { "KINGS", "WISDOM", "SALVATION", "MIGHT" },
-    MAGE    = { "WISDOM", "KINGS", "SALVATION", "LIGHT" },
-    WARLOCK = { "WISDOM", "KINGS", "SALVATION", "LIGHT" },
-    PRIEST  = { "WISDOM", "KINGS", "SALVATION", "LIGHT" },
-    DRUID   = { "WISDOM", "KINGS", "SALVATION", "LIGHT" },
+    MAGE    = { "WISDOM", "KINGS", "SALVATION", "LIGHT", "MIGHT" },
+    WARLOCK = { "WISDOM", "KINGS", "SALVATION", "LIGHT", "MIGHT" },
+    PRIEST  = { "WISDOM", "KINGS", "SALVATION", "LIGHT", "MIGHT" },
+    DRUID   = { "WISDOM", "KINGS", "SALVATION", "LIGHT", "MIGHT" },
     PALADIN = { "WISDOM", "KINGS", "MIGHT", "LIGHT" },
     SHAMAN  = { "WISDOM", "KINGS", "MIGHT", "LIGHT" },
+}
+
+-- Classes that can heal; their default priority is labeled "DPS/Healer" instead of "DPS".
+ns.HEALER_CLASSES = {
+    PRIEST  = true,
+    DRUID   = true,
+    PALADIN = true,
+    SHAMAN  = true,
 }
 
 -- Priority for players marked as tanks (/pb tank <name>). Never Salvation.
 ns.TANK_PRIORITY = {
     WARRIOR = { "KINGS", "MIGHT", "SANCTUARY", "LIGHT" },
     DRUID   = { "KINGS", "MIGHT", "SANCTUARY", "LIGHT" },
-    PALADIN = { "KINGS", "SANCTUARY", "WISDOM", "LIGHT" },
+    PALADIN = { "KINGS", "SANCTUARY", "WISDOM", "LIGHT", "MIGHT" },
 }
 
 -- Seconds left on your own blessing before suggesting a refresh.

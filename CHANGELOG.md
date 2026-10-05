@@ -1,5 +1,10 @@
 # PallyBuff
 
+## v1.0.5
+
+- Removed Blessing of Sanctuary, which doesn't exist in WoW Forever. Tank priorities are now Kings > Might > Light (Warrior, Druid) and Kings > Wisdom > Light > Might (Paladin).
+- Refresh warning now triggers with 5 minutes left instead of 60 seconds, to suit Forever's 1-hour blessings.
+
 ## v1.0.4
 
 - Tooltip role now matches the class: warriors, rogues, hunters, mages and warlocks show "DPS"; only healing classes show "DPS/Healer". Classes that can tank get a "Tanking? /pb tank" hint.

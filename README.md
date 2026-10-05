@@ -6,9 +6,9 @@ A WoW Forever addon for paladins. Target a friendly player and PallyBuff shows t
 
 - **One-click blessing**: an icon next to the target frame shows the blessing to cast. Left-click casts it on your target, right-click casts the Greater version if you know it.
 - **Class priorities**: warriors and rogues get Might first, casters and healers get Wisdom first, hunters get Kings first, and so on.
-- **Tank mode**: mark tanks with `/pb tank <name>` and they get Kings/Might/Sanctuary priority, never Salvation.
+- **Tank mode**: mark tanks with `/pb tank <name>` and they get Kings/Might priority, never Salvation.
 - **Aware of other paladins**: blessings another paladin already cast are skipped, so you suggest the next one down.
-- **Refresh warnings**: the border turns yellow when your blessing on the target has under 60 seconds left.
+- **Refresh warnings**: the border turns yellow when your blessing on the target has under 5 minutes left.
 - **Full breakdown on hover**: the tooltip lists the target's whole priority, who cast what, and time left.
 - **Works in any client language.**
 
@@ -39,8 +39,8 @@ World of Warcraft\_classic_beta_\Interface\AddOns\
 | Mage, Warlock, Priest, Druid | Wisdom > Kings > Salvation > Light > Might |
 | Paladin | Wisdom > Kings > Might > Light |
 | Shaman | Wisdom > Kings > Might > Light |
-| Warrior, Druid (tank) | Kings > Might > Sanctuary > Light |
-| Paladin (tank) | Kings > Sanctuary > Wisdom > Light > Might |
+| Warrior, Druid (tank) | Kings > Might > Light |
+| Paladin (tank) | Kings > Wisdom > Light > Might |
 
 To change them, edit `Data.lua`.
 

@@ -3,9 +3,9 @@ max_line_length = false
 self = false
 
 globals = {
-    "PallyBuffDB",
-    "SLASH_PALLYBUFF1",
-    "SLASH_PALLYBUFF2",
+    "EzBlessingsDB",
+    "SLASH_EZBLESSINGS1",
+    "SLASH_EZBLESSINGS2",
     "SlashCmdList",
 }
 

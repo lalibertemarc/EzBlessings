@@ -1,4 +1,10 @@
-# PallyBuff
+# EzBlessings
+
+## v1.1.0
+
+- Renamed from PallyBuff to EzBlessings. None go unblessed.
+- Slash commands are now `/ezb` and `/ezblessings` (was `/pb` and `/pallybuff`).
+- Settings are stored under a new name, so marked tanks and the button position start fresh. Delete the old `PallyBuff` folder from `Interface\AddOns`.
 
 ## v1.0.6
 

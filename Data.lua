@@ -1,4 +1,4 @@
--- PallyBuff data: edit priorities here.
+-- EzBlessings data: edit priorities here.
 local _, ns = ...
 
 -- key -> ranks of the normal and Greater blessing as { spellId, level learned }, lowest rank first.
@@ -54,7 +54,7 @@ ns.HEALER_CLASSES = {
     SHAMAN  = true,
 }
 
--- Priority for players marked as tanks (/pb tank <name>). Never Salvation.
+-- Priority for players marked as tanks (/ezb tank <name>). Never Salvation.
 ns.TANK_PRIORITY = {
     WARRIOR = { "KINGS", "MIGHT", "LIGHT" },
     DRUID   = { "KINGS", "MIGHT", "LIGHT" },

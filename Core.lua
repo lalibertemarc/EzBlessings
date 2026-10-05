@@ -1,4 +1,4 @@
--- PallyBuff: recommends the Paladin blessing your friendly target needs.
+-- EzBlessings: recommends the Paladin blessing your friendly target needs.
 local _, ns = ...
 
 if select(2, UnitClass("player")) ~= "PALADIN" then return end
@@ -150,7 +150,7 @@ end
 local function Evaluate(unit)
     local className, class = UnitClass(unit)
     local r = { name = UnitName(unit), class = class, className = className, list = {}, done = false }
-    r.tank = PallyBuffDB.tanks[UnitKey(unit)] == true
+    r.tank = EzBlessingsDB.tanks[UnitKey(unit)] == true
     r.grouped = InGroup(unit)
     local level = UnitLevel(unit)
     level = (level and level > 0) and level or math.huge -- -1 means far above you
@@ -202,7 +202,7 @@ end
 ---------------------------------------------------------------------------
 -- Button
 ---------------------------------------------------------------------------
-local btn = CreateFrame("Button", "PallyBuffButton", UIParent, "SecureActionButtonTemplate")
+local btn = CreateFrame("Button", "EzBlessingsButton", UIParent, "SecureActionButtonTemplate")
 btn:SetSize(40, 40)
 btn:SetFrameStrata("MEDIUM")
 btn:SetMovable(true)
@@ -239,7 +239,7 @@ local BORDER = {
 }
 
 local function ApplyPosition()
-    local p = PallyBuffDB.pos
+    local p = EzBlessingsDB.pos
     btn:ClearAllPoints()
     if p then
         btn:SetPoint(p[1], UIParent, p[2], p[3], p[4])
@@ -249,13 +249,13 @@ local function ApplyPosition()
 end
 
 btn:SetScript("OnDragStart", function(self)
-    if InCombatLockdown() or (PallyBuffDB.locked and not IsShiftKeyDown()) then return end
+    if InCombatLockdown() or (EzBlessingsDB.locked and not IsShiftKeyDown()) then return end
     self:StartMoving()
 end)
 btn:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
     local point, _, relPoint, x, y = self:GetPoint()
-    PallyBuffDB.pos = { point, relPoint, x, y }
+    EzBlessingsDB.pos = { point, relPoint, x, y }
 end)
 
 ---------------------------------------------------------------------------
@@ -286,7 +286,7 @@ local function ShowTooltip()
     local role = current.tank and "Tank" or ns.HEALER_CLASSES[current.class] and "DPS/Healer" or "DPS"
     GameTooltip:AddLine(format("%s - %s", current.className or "?", role), 0.8, 0.8, 0.8)
     if not current.tank and ns.TANK_PRIORITY[current.class] then
-        GameTooltip:AddLine("Tanking? /pb tank", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine("Tanking? /ezb tank", 0.6, 0.6, 0.6)
     end
     if current.hidden then
         GameTooltip:AddLine("Buffs hidden by the game right now (combat).", 1, 0.5, 0.1)
@@ -302,7 +302,7 @@ local function ShowTooltip()
         GameTooltip:AddLine("Casts " .. current.spell, 1, 0.82, 0)
     end
     GameTooltip:AddLine("Left-click: cast blessing   Right-click: Greater", 0.6, 0.6, 0.6)
-    GameTooltip:AddLine(PallyBuffDB.locked and "Shift-drag to move" or "Drag to move", 0.6, 0.6, 0.6)
+    GameTooltip:AddLine(EzBlessingsDB.locked and "Shift-drag to move" or "Drag to move", 0.6, 0.6, 0.6)
     GameTooltip:Show()
 end
 
@@ -359,22 +359,22 @@ end
 -- Slash commands
 ---------------------------------------------------------------------------
 local function Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cfff58cbaPallyBuff|r: " .. msg)
+    DEFAULT_CHAT_FRAME:AddMessage("|cfff58cbaEzBlessings|r: " .. msg)
 end
 
 local function SetTank(arg, value, verb)
     local name = (arg ~= "" and arg:lower()) or (UnitIsPlayer("target") and UnitKey("target"))
     if not name then return Print("give a name or target a player") end
-    PallyBuffDB.tanks[name] = value
+    EzBlessingsDB.tanks[name] = value
     Print(name .. " " .. verb)
 end
 
 local HELP = {
-    "/pb tank [name] - mark player (or target) as tank",
-    "/pb untank [name] - unmark tank",
-    "/pb tanks - list tanks",
-    "/pb lock | unlock - lock button position (shift-drag always moves)",
-    "/pb reset - reset button position",
+    "/ezb tank [name] - mark player (or target) as tank",
+    "/ezb untank [name] - unmark tank",
+    "/ezb tanks - list tanks",
+    "/ezb lock | unlock - lock button position (shift-drag always moves)",
+    "/ezb reset - reset button position",
 }
 
 local COMMANDS = {
@@ -382,23 +382,23 @@ local COMMANDS = {
     untank = function(arg) SetTank(arg, nil, "is no longer a tank.") end,
     tanks  = function()
         local names = {}
-        for name in pairs(PallyBuffDB.tanks) do names[#names + 1] = name end
+        for name in pairs(EzBlessingsDB.tanks) do names[#names + 1] = name end
         table.sort(names)
         Print("Tanks: " .. (#names > 0 and table.concat(names, ", ") or "none"))
     end,
-    lock   = function() PallyBuffDB.locked = true; Print("Locked.") end,
-    unlock = function() PallyBuffDB.locked = false; Print("Unlocked.") end,
+    lock   = function() EzBlessingsDB.locked = true; Print("Locked.") end,
+    unlock = function() EzBlessingsDB.locked = false; Print("Unlocked.") end,
     reset  = function()
         if InCombatLockdown() then return Print("Can't move in combat.") end
-        PallyBuffDB.pos = nil
+        EzBlessingsDB.pos = nil
         ApplyPosition()
         Print("Position reset.")
     end,
 }
 
-SLASH_PALLYBUFF1 = "/pb"
-SLASH_PALLYBUFF2 = "/pallybuff"
-SlashCmdList.PALLYBUFF = function(msg)
+SLASH_EZBLESSINGS1 = "/ezb"
+SLASH_EZBLESSINGS2 = "/ezblessings"
+SlashCmdList.EZBLESSINGS = function(msg)
     local cmd, arg = msg:match("^(%S*)%s*(.-)%s*$")
     local fn = COMMANDS[cmd:lower()]
     if fn then
@@ -419,9 +419,9 @@ ev:SetScript("OnEvent", function(self, event, unit)
     if event == "PLAYER_TARGET_CHANGED" then current = nil end
     if event == "PLAYER_LOGIN" then
         -- Saved variables are loaded by now; only start listening once they exist.
-        PallyBuffDB = PallyBuffDB or {}
-        PallyBuffDB.tanks = PallyBuffDB.tanks or {}
-        if PallyBuffDB.locked == nil then PallyBuffDB.locked = true end
+        EzBlessingsDB = EzBlessingsDB or {}
+        EzBlessingsDB.tanks = EzBlessingsDB.tanks or {}
+        if EzBlessingsDB.locked == nil then EzBlessingsDB.locked = true end
         ApplyPosition()
         for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "UNIT_AURA", "SPELLS_CHANGED", "PLAYER_REGEN_ENABLED" }) do
             self:RegisterEvent(e)

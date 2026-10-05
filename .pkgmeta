@@ -1,4 +1,4 @@
-package-as: PallyBuff
+package-as: EzBlessings
 
 manual-changelog:
   filename: CHANGELOG.md

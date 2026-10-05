@@ -1,10 +1,10 @@
 ## Interface: 16001
-## Title: PallyBuff
-## Notes: Shows which Paladin blessing your friendly target needs, by class priority.
+## Title: EzBlessings
+## Notes: Shows which Paladin blessing your friendly target needs. None go unblessed.
 ## Author: Marc
 ## Version: @project-version@
 ## IconTexture: Interface\Icons\Spell_Magic_GreaterBlessingofKings
-## SavedVariables: PallyBuffDB
+## SavedVariables: EzBlessingsDB
 
 Data.lua
 Core.lua

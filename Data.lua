@@ -1,14 +1,32 @@
 -- PallyBuff data: edit priorities here.
 local _, ns = ...
 
--- key -> { normal blessing spellId, greater blessing spellId }
+-- key -> ranks of the normal and Greater blessing as { spellId, level learned }, lowest rank first.
 ns.BLESSINGS = {
-    MIGHT     = { 19740, 25782 },
-    WISDOM    = { 19742, 25894 },
-    KINGS     = { 20217, 25898 },
-    SALVATION = { 1038,  25895 },
-    LIGHT     = { 19977, 25890 },
+    MIGHT = {
+        ranks   = { { 19740, 4 }, { 19834, 12 }, { 19835, 22 }, { 19836, 32 }, { 19837, 42 }, { 19838, 52 }, { 25291, 60 } },
+        greater = { { 25782, 52 }, { 25916, 60 } },
+    },
+    WISDOM = {
+        ranks   = { { 19742, 14 }, { 19850, 24 }, { 19852, 34 }, { 19853, 44 }, { 19854, 54 }, { 25290, 60 } },
+        greater = { { 25894, 54 }, { 25918, 60 } },
+    },
+    KINGS = {
+        ranks   = { { 20217, 20 } },
+        greater = { { 25898, 60 } },
+    },
+    SALVATION = {
+        ranks   = { { 1038, 26 } },
+        greater = { { 25895, 60 } },
+    },
+    LIGHT = {
+        ranks   = { { 19977, 40 }, { 19978, 50 }, { 19979, 60 } },
+        greater = { { 25890, 60 } },
+    },
 }
+
+-- A rank can't be cast on a target more than this many levels below the level it's learned at.
+ns.RANK_LEVEL_GAP = 10
 
 -- Blessings the game only lets you cast on yourself or party/raid members.
 ns.GROUP_ONLY = {

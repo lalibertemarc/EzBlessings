@@ -16,12 +16,21 @@ local function SpellInfo(id)
     end
 end
 
-local function SpellBookName(i)
-    if C_SpellBook and C_SpellBook.GetSpellBookItemName then
-        local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player or 0
-        return (C_SpellBook.GetSpellBookItemName(i, bank))
-    end
-    return (GetSpellBookItemName(i, BOOKTYPE_SPELL or "spell"))
+local function SpellSubtext(id)
+    if C_Spell and C_Spell.GetSpellSubtext then return C_Spell.GetSpellSubtext(id) end
+    return GetSpellSubtext and GetSpellSubtext(id)
+end
+
+local function IsKnown(id)
+    if C_SpellBook and C_SpellBook.IsSpellKnown then return C_SpellBook.IsSpellKnown(id) end
+    return IsSpellKnown(id)
+end
+
+-- "Name(Rank N)" makes the secure button cast that exact rank instead of the highest one.
+local function CastName(id)
+    local name = SpellInfo(id)
+    local rank = SpellSubtext(id)
+    return (rank and rank ~= "") and format("%s(%s)", name, rank) or name
 end
 
 -- Forever's client hides aura data from addons in some situations (e.g. combat) as "secret" values.
@@ -47,9 +56,8 @@ end
 ---------------------------------------------------------------------------
 -- Spell data
 ---------------------------------------------------------------------------
-local blessing = {}   -- key -> { name, short, greater, icon }
-local nameToKey = {}  -- localized buff name (normal or greater) -> key
-local known = {}      -- localized spell name -> true
+local blessing = ns.BLESSINGS -- key -> { ranks, greater } from Data.lua, plus name, short, icon added below
+local nameToKey = {}          -- localized buff name (normal or greater) -> key
 
 -- Whole words shared by every blessing name ("Blessing of ", "Bénédiction de ", ...).
 local function SharedPrefix()
@@ -68,12 +76,12 @@ end
 
 local function RefreshSpells()
     wipe(nameToKey)
-    for key, ids in pairs(ns.BLESSINGS) do
-        local name, icon = SpellInfo(ids[1])
-        local greater = SpellInfo(ids[2])
-        blessing[key] = { name = name or key, greater = greater, icon = icon or 134400 }
+    for key, b in pairs(blessing) do
+        local name, icon = SpellInfo(b.ranks[1][1])
+        local greaterName = SpellInfo(b.greater[1][1])
+        b.name, b.icon = name or key, icon or 134400
         if name then nameToKey[name] = key end
-        if greater then nameToKey[greater] = key end
+        if greaterName then nameToKey[greaterName] = key end
     end
 
     -- Button label shows only the part that differs ("Might", "Kings") in any client language.
@@ -81,13 +89,18 @@ local function RefreshSpells()
     for _, b in pairs(blessing) do
         b.short = b.name:sub(#prefix + 1)
     end
+end
 
-    wipe(known)
-    for i = 1, 1000 do
-        local name = SpellBookName(i)
-        if not name then break end
-        known[name] = true
+-- Highest known rank castable on a target of this level (nil if none); second value: any rank known at all.
+local function BestRank(ranks, level)
+    local best, anyKnown = nil, false
+    for _, r in ipairs(ranks) do
+        if IsKnown(r[1]) then
+            anyKnown = true
+            if r[2] - ns.RANK_LEVEL_GAP <= level then best = r[1] end
+        end
     end
+    return best, anyKnown
 end
 
 ---------------------------------------------------------------------------
@@ -128,14 +141,19 @@ local function InGroup(unit)
 end
 
 -- Entry states: "missing", "expiring" (yours, about to drop), "mine", "other" (another paladin's),
--- "unknown" (not learned), "nogroup" (group-only blessing, target not in your group).
--- Result: { name, class, className, tank, grouped, hidden, list = {entries}, rec = entry to cast or nil, done = bool }
+-- "unknown" (not learned), "lowlevel" (no rank you know fits the target's level),
+-- "nogroup" (group-only blessing, target not in your group).
+-- Entry: { key, state, spellId (rank to cast), source, remaining }
+-- Result: { name, class, className, tank, grouped, hidden, list = {entries}, done = bool,
+--           rec = entry to cast or nil, spell / greater = button cast strings for rec }
 -- hidden = auras couldn't be read, so the result is class priority only.
 local function Evaluate(unit)
     local className, class = UnitClass(unit)
     local r = { name = UnitName(unit), class = class, className = className, list = {}, done = false }
     r.tank = PallyBuffDB.tanks[UnitKey(unit)] == true
     r.grouped = InGroup(unit)
+    local level = UnitLevel(unit)
+    level = (level and level > 0) and level or math.huge -- -1 means far above you
 
     local prio = (r.tank and ns.TANK_PRIORITY[class]) or ns.PRIORITY[class] or ns.PRIORITY.WARRIOR
     local found = ScanBlessings(unit)
@@ -144,25 +162,39 @@ local function Evaluate(unit)
 
     for _, key in ipairs(prio) do
         local f = found[key]
+        local spellId, anyKnown = BestRank(blessing[key].ranks, level)
         local state
         if f and f.mine then
-            state = (f.remaining and f.remaining <= ns.REFRESH_THRESHOLD) and "expiring" or "mine"
+            state = (spellId and f.remaining and f.remaining <= ns.REFRESH_THRESHOLD) and "expiring" or "mine"
         elseif f then
             state = "other"
-        elseif not known[blessing[key].name] then
+        elseif not anyKnown then
             state = "unknown"
+        elseif not spellId then
+            state = "lowlevel"
         elseif ns.GROUP_ONLY[key] and not r.grouped then
             state = "nogroup"
         else
             state = "missing"
         end
-        local e = { key = key, state = state, source = f and f.source, remaining = f and f.remaining }
+        local e = { key = key, state = state, spellId = spellId, source = f and f.source, remaining = f and f.remaining }
         r.list[#r.list + 1] = e
 
         -- One blessing per paladin per target: the first slot not covered by someone else decides.
-        if not r.rec and not r.done and (state == "missing" or state == "expiring" or state == "mine") then
-            if state == "mine" then r.done = true else r.rec = e end
+        if not (r.rec or r.done) then
+            if state == "mine" then
+                r.done = true
+            elseif state == "missing" or state == "expiring" then
+                r.rec = e
+            end
         end
+    end
+
+    if r.rec then
+        r.spell = CastName(r.rec.spellId)
+        -- Greater blessings only reach party/raid members.
+        local greaterId = r.grouped and BestRank(blessing[r.rec.key].greater, level)
+        r.greater = greaterId and CastName(greaterId)
     end
     return r
 end
@@ -235,6 +267,7 @@ local STATE_TEXT = {
     mine     = "|cff40ff40yours|r",
     other    = "|cff40ff40from %s|r",
     unknown  = "|cff808080not learned|r",
+    lowlevel = "|cff808080target too low|r",
     nogroup  = "|cff808080group only|r",
 }
 
@@ -265,6 +298,9 @@ local function ShowTooltip()
         GameTooltip:AddDoubleLine(format("%d. %s", i, blessing[e.key].name), text, 1, 1, 1)
     end
     GameTooltip:AddLine(" ")
+    if current.spell then
+        GameTooltip:AddLine("Casts " .. current.spell, 1, 0.82, 0)
+    end
     GameTooltip:AddLine("Left-click: cast blessing   Right-click: Greater", 0.6, 0.6, 0.6)
     GameTooltip:AddLine(PallyBuffDB.locked and "Shift-drag to move" or "Drag to move", 0.6, 0.6, 0.6)
     GameTooltip:Show()
@@ -293,15 +329,13 @@ local function Update()
     else
         local rec = current.rec
         local b = rec and blessing[rec.key]
-        local spell = b and b.name
-        -- Greater blessings only reach party/raid members.
-        local greater = b and current.grouped and known[b.greater] and b.greater
+        local spell = current.spell
 
         -- Secure attributes can't change in combat; the button keeps its old spell until combat ends.
         if not inCombat then
             btn:EnableMouse(true)
             btn:SetAttribute("spell", spell)
-            btn:SetAttribute("spell2", greater or spell)
+            btn:SetAttribute("spell2", current.greater or spell)
         end
         local stale = inCombat and btn:GetAttribute("spell") ~= spell
 
@@ -314,7 +348,8 @@ local function Update()
         else
             btn.label:SetText(current.done and "|cff40ff40Done|r" or "|cff808080Nothing|r")
         end
-        btn.border:SetColorTexture(unpack(BORDER[stale and "stale" or (rec and rec.state == "expiring") and "expiring" or "normal"]))
+        local border = (stale and "stale") or (rec and rec.state == "expiring" and "expiring") or "normal"
+        btn.border:SetColorTexture(unpack(BORDER[border]))
     end
 
     if btn.hover then ShowTooltip() end

@@ -1,5 +1,12 @@
 # PallyBuff
 
+## v1.0.6
+
+- Casts the highest blessing rank the target's level allows, so low-level players no longer get "target too low" errors. Blessings with no rank that fits are skipped and shown as "target too low" in the tooltip.
+- Tooltip shows exactly what will be cast, e.g. "Casts Blessing of Might(Rank 3)".
+- Right-click picks the right Greater Blessing rank too.
+- Code cleanup.
+
 ## v1.0.5
 
 - Removed Blessing of Sanctuary, which doesn't exist in WoW Forever. Tank priorities are now Kings > Might > Light (Warrior, Druid) and Kings > Wisdom > Light > Might (Paladin).

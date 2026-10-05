@@ -14,11 +14,11 @@ read_globals = {
     "format", "floor", "strtrim", "wipe", "unpack",
     -- Frames & UI
     "CreateFrame", "UIParent", "TargetFrame", "GameTooltip", "DEFAULT_CHAT_FRAME",
-    "RAID_CLASS_COLORS", "NORMAL_FONT_COLOR", "BOOKTYPE_SPELL", "Enum",
+    "RAID_CLASS_COLORS", "NORMAL_FONT_COLOR",
     -- Namespaced APIs
     "C_Spell", "C_SpellBook", "C_UnitAuras", "C_Timer", "C_Secrets", "issecretvalue",
     -- Global APIs
-    "GetSpellInfo", "GetSpellBookItemName", "UnitBuff", "UnitClass", "UnitName",
+    "GetSpellInfo", "GetSpellSubtext", "IsSpellKnown", "UnitBuff", "UnitClass", "UnitName", "UnitLevel",
     "UnitIsUnit", "UnitInParty", "UnitInRaid", "UnitExists", "UnitIsPlayer", "UnitIsFriend", "UnitIsDeadOrGhost",
     "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown",
 }

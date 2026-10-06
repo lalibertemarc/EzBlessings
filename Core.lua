@@ -36,6 +36,18 @@ end
 -- Forever's client hides aura data from addons in some situations (e.g. combat) as "secret" values.
 local issecret = issecretvalue or function() return false end
 
+-- true / false, or nil when range doesn't apply or can't be read.
+local function InRange(id, unit)
+    local r
+    if C_Spell and C_Spell.IsSpellInRange then
+        r = C_Spell.IsSpellInRange(id, unit)
+    elseif IsSpellInRange then
+        r = IsSpellInRange(SpellInfo(id), unit) -- 1, 0 or nil
+    end
+    if r == nil or issecret(r) then return nil end
+    return r == true or r == 1
+end
+
 local function AurasHidden()
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
 end
@@ -319,6 +331,16 @@ local function InHiddenInstance()
     return kind == "party" or kind == "raid"
 end
 
+-- Red icon, like action bars, while the recommended blessing can't reach the target.
+local function UpdateRange()
+    local rec = current and current.rec
+    if rec and InRange(rec.spellId, "target") == false then
+        btn.icon:SetVertexColor(1, 0.25, 0.25)
+    else
+        btn.icon:SetVertexColor(1, 1, 1)
+    end
+end
+
 local function Update()
     local inCombat = InCombatLockdown()
     local r = not InHiddenInstance() and ValidTarget("target") and Evaluate("target") or nil
@@ -357,6 +379,7 @@ local function Update()
         end
         local border = (stale and "stale") or (rec and rec.state == "expiring" and "expiring") or "normal"
         btn.border:SetColorTexture(unpack(BORDER[border]))
+        UpdateRange()
     end
 
     if btn.hover then ShowTooltip() end
@@ -440,6 +463,8 @@ ev:SetScript("OnEvent", function(self, event, unit)
             self:RegisterEvent(e)
         end
         C_Timer.NewTicker(1, Update)
+        -- Range has no event, so poll it faster than the full update.
+        C_Timer.NewTicker(0.2, UpdateRange)
     end
     if event == "PLAYER_LOGIN" or event == "SPELLS_CHANGED" then
         RefreshSpells()

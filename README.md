@@ -21,6 +21,7 @@ The paladin is the hand that always gives.
 - **Right rank for low levels**: casts the highest rank the target's level allows, so low-level players don't get "target too low" errors. The tooltip shows which rank will be cast.
 - **Aware of other paladins**: blessings another paladin already cast are skipped, so you suggest the next one down.
 - **Refresh warnings**: the border turns yellow when your blessing on the target has under 5 minutes left.
+- **Range warning**: the icon turns red when the target is out of range of the blessing.
 - **Full breakdown on hover**: the tooltip lists the target's whole priority, who cast what, and time left.
 - **Works in any client language.**
 

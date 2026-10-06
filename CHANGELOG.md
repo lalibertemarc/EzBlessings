@@ -1,5 +1,9 @@
 # EzBlessings
 
+## Unreleased
+
+- The button icon turns red when the target is out of range of the recommended blessing.
+
 ## v1.2.1
 
 - First release on CurseForge. No gameplay changes from v1.2.0.

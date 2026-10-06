@@ -1,6 +1,6 @@
 # EzBlessings
 
-## Unreleased
+## v1.3.0
 
 - The button icon turns red when the target is out of range of the recommended blessing.
 

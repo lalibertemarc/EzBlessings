@@ -1,5 +1,9 @@
 # EzBlessings
 
+## v1.2.1
+
+- First release on CurseForge. No gameplay changes from v1.2.0.
+
 ## v1.2.0
 
 - The button is now hidden in dungeons and raids, where the game hides buffs from addons the whole time. Use `/ezb instances` to show it there anyway.

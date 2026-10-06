@@ -5,6 +5,7 @@
 ## Version: @project-version@
 ## IconTexture: Interface\Icons\Spell_Magic_GreaterBlessingofKings
 ## SavedVariables: EzBlessingsDB
+## X-Curse-Project-ID: 1726933
 
 Data.lua
 Core.lua

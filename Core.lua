@@ -289,7 +289,7 @@ local function ShowTooltip()
         GameTooltip:AddLine("Tanking? /ezb tank", 0.6, 0.6, 0.6)
     end
     if current.hidden then
-        GameTooltip:AddLine("Buffs hidden by the game right now (combat).", 1, 0.5, 0.1)
+        GameTooltip:AddLine("Buffs hidden by the game right now.", 1, 0.5, 0.1)
         GameTooltip:AddLine(current.stale and "Showing what was read before." or "Showing class priority only.", 1, 0.5, 0.1)
     end
     GameTooltip:AddLine(" ")
@@ -312,9 +312,16 @@ btn:SetScript("OnLeave", function(self) self.hover = false; GameTooltip:Hide() e
 ---------------------------------------------------------------------------
 -- Update
 ---------------------------------------------------------------------------
+-- Forever hides buffs for the whole of a dungeon or raid, so the button can't tell anything useful there.
+local function InHiddenInstance()
+    if not EzBlessingsDB.hideInInstances then return false end
+    local _, kind = IsInInstance()
+    return kind == "party" or kind == "raid"
+end
+
 local function Update()
     local inCombat = InCombatLockdown()
-    local r = ValidTarget("target") and Evaluate("target") or nil
+    local r = not InHiddenInstance() and ValidTarget("target") and Evaluate("target") or nil
     local hasRealResult = current and (current.stale or not current.hidden)
     if r and r.hidden and hasRealResult then
         -- Can't read buffs now: keep the last real result for this target (cleared on target change).
@@ -375,6 +382,7 @@ local HELP = {
     "/ezb tanks - list tanks",
     "/ezb lock | unlock - lock button position (shift-drag always moves)",
     "/ezb reset - reset button position",
+    "/ezb instances - toggle hiding the button in dungeons and raids",
 }
 
 local COMMANDS = {
@@ -393,6 +401,10 @@ local COMMANDS = {
         EzBlessingsDB.pos = nil
         ApplyPosition()
         Print("Position reset.")
+    end,
+    instances = function()
+        EzBlessingsDB.hideInInstances = not EzBlessingsDB.hideInInstances
+        Print(EzBlessingsDB.hideInInstances and "Hidden in dungeons and raids." or "Shown in dungeons and raids.")
     end,
 }
 
@@ -422,8 +434,9 @@ ev:SetScript("OnEvent", function(self, event, unit)
         EzBlessingsDB = EzBlessingsDB or {}
         EzBlessingsDB.tanks = EzBlessingsDB.tanks or {}
         if EzBlessingsDB.locked == nil then EzBlessingsDB.locked = true end
+        if EzBlessingsDB.hideInInstances == nil then EzBlessingsDB.hideInInstances = true end
         ApplyPosition()
-        for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "UNIT_AURA", "SPELLS_CHANGED", "PLAYER_REGEN_ENABLED" }) do
+        for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "UNIT_AURA", "SPELLS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }) do
             self:RegisterEvent(e)
         end
         C_Timer.NewTicker(1, Update)

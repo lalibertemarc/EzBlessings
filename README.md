@@ -44,6 +44,7 @@ Use `/ezb` or `/ezblessings`.
 | `/ezb tanks` | List marked tanks |
 | `/ezb lock` / `/ezb unlock` | Lock or unlock the button (Shift-drag always moves it) |
 | `/ezb reset` | Reset the button position |
+| `/ezb instances` | Toggle hiding the button in dungeons and raids (hidden by default, since the game hides buffs there) |
 
 ## Default priorities
 

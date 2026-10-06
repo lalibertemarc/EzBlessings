@@ -1,5 +1,10 @@
 # EzBlessings
 
+## Unreleased
+
+- The button is now hidden in dungeons and raids, where the game hides buffs from addons the whole time. Use `/ezb instances` to show it there anyway.
+- Tooltip no longer blames combat when buffs are hidden, since it also happens outside combat.
+
 ## v1.1.0
 
 - Renamed from PallyBuff to EzBlessings. None go unblessed.

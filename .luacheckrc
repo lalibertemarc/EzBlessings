@@ -20,5 +20,5 @@ read_globals = {
     -- Global APIs
     "GetSpellInfo", "GetSpellSubtext", "IsSpellKnown", "UnitBuff", "UnitClass", "UnitName", "UnitLevel",
     "UnitIsUnit", "UnitInParty", "UnitInRaid", "UnitExists", "UnitIsPlayer", "UnitIsFriend", "UnitIsDeadOrGhost",
-    "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown",
+    "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown", "IsInInstance",
 }

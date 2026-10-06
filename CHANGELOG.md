@@ -1,6 +1,6 @@
 # EzBlessings
 
-## Unreleased
+## v1.2.0
 
 - The button is now hidden in dungeons and raids, where the game hides buffs from addons the whole time. Use `/ezb instances` to show it there anyway.
 - Tooltip no longer blames combat when buffs are hidden, since it also happens outside combat.

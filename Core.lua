@@ -210,9 +210,10 @@ end
 -- "nogroup" (group-only blessing, target not in your group).
 -- Entry: { key, state, spellId (rank to cast), source, remaining }
 -- Result: { name, class, className, tank, grouped, hidden, unworthy, list = {entries}, done = bool,
---           rec = entry to cast or nil, spell / greater = button cast strings for rec }
+--           rec = entry to cast or nil, spell / greater = button cast strings for rec, refresh = bool }
 -- hidden = auras couldn't be read, so the result is class priority only.
 -- unworthy = why the target gets no blessing (see Unworthy); nothing is recommended.
+-- refresh = every slot is covered by other paladins, so rec recasts the most wanted of theirs.
 local function Evaluate(unit)
     local className, class = UnitClass(unit)
     local r = { name = UnitName(unit), class = class, className = className, list = {}, done = false }
@@ -253,6 +254,16 @@ local function Evaluate(unit)
                 r.done = true
             elseif state == "missing" or state == "expiring" then
                 r.rec = e
+            end
+        end
+    end
+
+    -- Everything is covered by other paladins: refresh the most wanted one you can cast rather than give nothing.
+    if not (r.rec or r.done or r.unworthy) then
+        for _, e in ipairs(r.list) do
+            if e.state == "other" and e.spellId and not (ns.GROUP_ONLY[e.key] and not r.grouped) then
+                r.rec, r.refresh = e, true
+                break
             end
         end
     end
@@ -372,6 +383,9 @@ local function ShowTooltip()
     if current.spell then
         GameTooltip:AddLine("Casts " .. current.spell, 1, 0.82, 0)
     end
+    if current.refresh then
+        GameTooltip:AddLine(format("All covered: refreshes %s's blessing.", current.rec.source or "another paladin"), 0.6, 0.6, 0.6)
+    end
     GameTooltip:AddLine("Left-click: cast blessing   Right-click: Greater", 0.6, 0.6, 0.6)
     GameTooltip:AddLine(EzBlessingsDB.locked and "Shift-drag to move" or "Drag to move", 0.6, 0.6, 0.6)
     GameTooltip:Show()
@@ -432,7 +446,7 @@ local function Update()
         btn.icon:SetTexture(b and b.icon or blessing.KINGS.icon)
         btn.icon:SetDesaturated(not b or stale)
         if b then
-            btn.label:SetText(b.short)
+            btn.label:SetText(current.refresh and b.short .. " |cff808080(refresh)|r" or b.short)
         else
             btn.label:SetText((current.unworthy and "|cffff4040Unworthy|r")
                 or (current.done and "|cff40ff40Done|r") or "|cff808080Nothing|r")

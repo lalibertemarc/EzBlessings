@@ -10,6 +10,7 @@ Paladin lore rests on the Three Virtues of the Light that Uther the Lightbringer
 
 - **Every class gets something.** When a class has no real use for any blessing left, it still gets Might as a last resort instead of nothing.
 - **Every level gets something.** A low-level player who can't take the top rank gets the highest rank their level allows instead of nothing.
+- **Every target gets something.** When other paladins already cover every blessing, you're offered a refresh of the most wanted one instead of nothing.
 
 The paladin is the hand that always gives. Almost always: see `/ezb olympus`.
 
@@ -19,7 +20,7 @@ The paladin is the hand that always gives. Almost always: see `/ezb olympus`.
 - **Class priorities**: warriors and rogues get Might first, mages, warlocks and priests get Wisdom first, druids, paladins, shamans and hunters get Kings first, and so on.
 - **Tank mode**: mark tanks with `/ezb tank <name>` and they get Kings/Might priority, never Salvation.
 - **Right rank for low levels**: casts the highest rank the target's level allows, so low-level players don't get "target too low" errors. The tooltip shows which rank will be cast.
-- **Aware of other paladins**: blessings another paladin already cast are skipped, so you suggest the next one down.
+- **Aware of other paladins**: blessings another paladin already cast are skipped, so you suggest the next one down. If they've covered everything, the button offers to refresh the top-priority one.
 - **Refresh warnings**: the border turns yellow when your blessing on the target has under 20 minutes left.
 - **Range warning**: the icon turns red when the target is out of range of the blessing.
 - **Full breakdown on hover**: the tooltip lists the target's whole priority, who cast what, and time left.

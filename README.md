@@ -16,7 +16,7 @@ The paladin is the hand that always gives.
 ## Features
 
 - **One-click blessing**: an icon next to the target frame shows the blessing to cast. Left-click casts it on your target, right-click casts the Greater version if you know it.
-- **Class priorities**: warriors and rogues get Might first, casters and healers get Wisdom first, hunters get Kings first, and so on.
+- **Class priorities**: warriors and rogues get Might first, mages, warlocks and priests get Wisdom first, druids, paladins, shamans and hunters get Kings first, and so on.
 - **Tank mode**: mark tanks with `/ezb tank <name>` and they get Kings/Might priority, never Salvation.
 - **Right rank for low levels**: casts the highest rank the target's level allows, so low-level players don't get "target too low" errors. The tooltip shows which rank will be cast.
 - **Aware of other paladins**: blessings another paladin already cast are skipped, so you suggest the next one down.
@@ -53,9 +53,9 @@ Use `/ezb` or `/ezblessings`.
 |---|---|
 | Warrior, Rogue | Might > Kings > Salvation > Light |
 | Hunter | Kings > Wisdom > Salvation > Might |
-| Mage, Warlock, Priest, Druid | Wisdom > Kings > Salvation > Light > Might |
-| Paladin | Wisdom > Kings > Might > Light |
-| Shaman | Wisdom > Kings > Might > Light |
+| Mage, Warlock, Priest | Wisdom > Kings > Salvation > Light > Might |
+| Druid | Kings > Wisdom > Salvation > Light > Might |
+| Paladin, Shaman | Kings > Wisdom > Might > Light |
 | Warrior, Druid (tank) | Kings > Might > Light |
 | Paladin (tank) | Kings > Wisdom > Light > Might |
 

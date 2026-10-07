@@ -41,9 +41,9 @@ ns.PRIORITY = {
     MAGE    = { "WISDOM", "KINGS", "SALVATION", "LIGHT", "MIGHT" },
     WARLOCK = { "WISDOM", "KINGS", "SALVATION", "LIGHT", "MIGHT" },
     PRIEST  = { "WISDOM", "KINGS", "SALVATION", "LIGHT", "MIGHT" },
-    DRUID   = { "WISDOM", "KINGS", "SALVATION", "LIGHT", "MIGHT" },
-    PALADIN = { "WISDOM", "KINGS", "MIGHT", "LIGHT" },
-    SHAMAN  = { "WISDOM", "KINGS", "MIGHT", "LIGHT" },
+    DRUID   = { "KINGS", "WISDOM", "SALVATION", "LIGHT", "MIGHT" },
+    PALADIN = { "KINGS", "WISDOM", "MIGHT", "LIGHT" },
+    SHAMAN  = { "KINGS", "WISDOM", "MIGHT", "LIGHT" },
 }
 
 -- Classes that can heal; their default priority is labeled "DPS/Healer" instead of "DPS".

@@ -1,5 +1,9 @@
 # EzBlessings
 
+## Unreleased
+
+- Druids, paladins and shamans now get Blessing of Kings first, then Wisdom. Mages, warlocks and priests still get Wisdom first.
+
 ## v1.4.0
 
 - Refresh warning now triggers with 20 minutes left instead of 5, so your blessings are recommended for recast sooner.

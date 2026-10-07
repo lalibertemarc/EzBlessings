@@ -1,6 +1,6 @@
 # EzBlessings
 
-## Unreleased
+## v1.4.0
 
 - Refresh warning now triggers with 20 minutes left instead of 5, so your blessings are recommended for recast sooner.
 - The button icon also turns red while you're mounted, since you can't cast blessings until you dismount.

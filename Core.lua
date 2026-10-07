@@ -172,10 +172,11 @@ local function MuteKey(unit, om)
     return (name .. "-" .. realm:gsub("[%s%-]", "")):lower()
 end
 
-local function GuildMatches(g, keywords, whitelist)
-    if whitelist and whitelist[g] then return false end
-    for _, kw in ipairs(keywords) do
-        if type(kw) == "string" and kw ~= "" and g:find(kw, 1, true) then return true end
+-- True if lowercase text contains any of the words (and isn't on the exact-name whitelist).
+local function ContainsAny(text, words, whitelist)
+    if whitelist and whitelist[text] then return false end
+    for _, w in ipairs(words) do
+        if type(w) == "string" and w ~= "" and text:find(w, 1, true) then return true end
     end
     return false
 end
@@ -188,21 +189,15 @@ local function Unworthy(unit)
     local guild = GetGuildInfo(unit)
     if issecret(guild) or type(guild) ~= "string" or guild == "" then guild = nil end
     local om = MuteLists()
-    if not om then
-        return guild and GuildMatches(guild:lower(), ns.UNWORTHY_GUILDS) and "<" .. guild .. ">" or nil
-    end
-
-    local key = MuteKey(unit, om)
+    local key = om and MuteKey(unit, om)
     if key and om.allow[key] then return nil end
-    if guild and GuildMatches(guild:lower(), om.keywords, om.guildAllow) then return "<" .. guild .. ">" end
-    if not key then return nil end
-    if om.manual[key] then return "On your OlympusMute list" end
     -- Guild info can take a moment to load after targeting: fall back to the guild OlympusMute saw.
-    local seen = om.names[key]
-    if not guild and type(seen) == "string" then return "<" .. seen .. ">" end
-    local name = key:match("^[^%-]+")
-    for _, w in ipairs(om.nameWords) do
-        if type(w) == "string" and w ~= "" and name:find(w, 1, true) then return "On your OlympusMute list" end
+    if not guild and key and not om.manual[key] and type(om.names[key]) == "string" then guild = om.names[key] end
+    if guild and ContainsAny(guild:lower(), om and om.keywords or ns.UNWORTHY_GUILDS, om and om.guildAllow) then
+        return "<" .. guild .. ">"
+    end
+    if key and (om.manual[key] or ContainsAny(key:match("^[^%-]+"), om.nameWords)) then
+        return "On your OlympusMute list"
     end
 end
 

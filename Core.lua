@@ -148,6 +148,64 @@ local function ScanBlessings(unit)
     return found
 end
 
+-- OlympusMute's saved lists, when that addon is loaded, so both addons agree on who's unworthy.
+local function MuteLists()
+    local om = OlympusMuteDB
+    if type(om) ~= "table" then return nil end
+    for _, k in ipairs({ "keywords", "guildAllow", "names", "manual", "allow", "guids", "nameWords" }) do
+        if type(om[k]) ~= "table" then return nil end
+    end
+    return om
+end
+
+-- Same key OlympusMute uses: "name-realm", lowercase, realm without spaces or hyphens.
+local function MuteKey(unit, om)
+    local guid = UnitGUID(unit)
+    local key = guid and not issecret(guid) and om.guids[guid]
+    if type(key) == "string" then return key end
+    local full = GetUnitName(unit, true)
+    if issecret(full) or type(full) ~= "string" or full == "" then return nil end
+    local name, realm = full:match("^([^%-]+)%-(.+)$")
+    if not name then
+        name, realm = full, (GetNormalizedRealmName and GetNormalizedRealmName()) or GetRealmName() or ""
+    end
+    return (name .. "-" .. realm:gsub("[%s%-]", "")):lower()
+end
+
+local function GuildMatches(g, keywords, whitelist)
+    if whitelist and whitelist[g] then return false end
+    for _, kw in ipairs(keywords) do
+        if type(kw) == "string" and kw ~= "" and g:find(kw, 1, true) then return true end
+    end
+    return false
+end
+
+-- Why the unit gets no blessing ("<Guild>" or "On your OlympusMute list"), or nil.
+-- With OlympusMute: its guild names and guild whitelist, players it learned or you added,
+-- its never-mute list and character-name keywords. Without it: ns.UNWORTHY_GUILDS.
+local function Unworthy(unit)
+    if not EzBlessingsDB.skipUnworthy or UnitIsUnit(unit, "player") then return nil end
+    local guild = GetGuildInfo(unit)
+    if issecret(guild) or type(guild) ~= "string" or guild == "" then guild = nil end
+    local om = MuteLists()
+    if not om then
+        return guild and GuildMatches(guild:lower(), ns.UNWORTHY_GUILDS) and "<" .. guild .. ">" or nil
+    end
+
+    local key = MuteKey(unit, om)
+    if key and om.allow[key] then return nil end
+    if guild and GuildMatches(guild:lower(), om.keywords, om.guildAllow) then return "<" .. guild .. ">" end
+    if not key then return nil end
+    if om.manual[key] then return "On your OlympusMute list" end
+    -- Guild info can take a moment to load after targeting: fall back to the guild OlympusMute saw.
+    local seen = om.names[key]
+    if not guild and type(seen) == "string" then return "<" .. seen .. ">" end
+    local name = key:match("^[^%-]+")
+    for _, w in ipairs(om.nameWords) do
+        if type(w) == "string" and w ~= "" and name:find(w, 1, true) then return "On your OlympusMute list" end
+    end
+end
+
 local function InGroup(unit)
     return UnitIsUnit(unit, "player") or UnitInParty(unit) or UnitInRaid(unit) ~= nil
 end
@@ -156,14 +214,16 @@ end
 -- "unknown" (not learned), "lowlevel" (no rank you know fits the target's level),
 -- "nogroup" (group-only blessing, target not in your group).
 -- Entry: { key, state, spellId (rank to cast), source, remaining }
--- Result: { name, class, className, tank, grouped, hidden, list = {entries}, done = bool,
+-- Result: { name, class, className, tank, grouped, hidden, unworthy, list = {entries}, done = bool,
 --           rec = entry to cast or nil, spell / greater = button cast strings for rec }
 -- hidden = auras couldn't be read, so the result is class priority only.
+-- unworthy = why the target gets no blessing (see Unworthy); nothing is recommended.
 local function Evaluate(unit)
     local className, class = UnitClass(unit)
     local r = { name = UnitName(unit), class = class, className = className, list = {}, done = false }
     r.tank = EzBlessingsDB.tanks[UnitKey(unit)] == true
     r.grouped = InGroup(unit)
+    r.unworthy = Unworthy(unit)
     local level = UnitLevel(unit)
     level = (level and level > 0) and level or math.huge -- -1 means far above you
 
@@ -193,7 +253,7 @@ local function Evaluate(unit)
         r.list[#r.list + 1] = e
 
         -- One blessing per paladin per target: the first slot not covered by someone else decides.
-        if not (r.rec or r.done) then
+        if not (r.rec or r.done or r.unworthy) then
             if state == "mine" then
                 r.done = true
             elseif state == "missing" or state == "expiring" then
@@ -300,6 +360,10 @@ local function ShowTooltip()
     if not current.tank and ns.TANK_PRIORITY[current.class] then
         GameTooltip:AddLine("Tanking? /ezb tank", 0.6, 0.6, 0.6)
     end
+    if current.unworthy then
+        GameTooltip:AddLine(current.unworthy .. ": unworthy of the Light.", 1, 0.25, 0.25)
+        GameTooltip:AddLine("Toggle with /ezb olympus", 0.6, 0.6, 0.6)
+    end
     if current.hidden then
         GameTooltip:AddLine("Buffs hidden by the game right now.", 1, 0.5, 0.1)
         GameTooltip:AddLine(current.stale and "Showing what was read before." or "Showing class priority only.", 1, 0.5, 0.1)
@@ -375,7 +439,8 @@ local function Update()
         if b then
             btn.label:SetText(b.short)
         else
-            btn.label:SetText(current.done and "|cff40ff40Done|r" or "|cff808080Nothing|r")
+            btn.label:SetText((current.unworthy and "|cffff4040Unworthy|r")
+                or (current.done and "|cff40ff40Done|r") or "|cff808080Nothing|r")
         end
         local border = (stale and "stale") or (rec and rec.state == "expiring" and "expiring") or "normal"
         btn.border:SetColorTexture(unpack(BORDER[border]))
@@ -406,6 +471,7 @@ local HELP = {
     "/ezb lock | unlock - lock button position (shift-drag always moves)",
     "/ezb reset - reset button position",
     "/ezb instances - toggle hiding the button in dungeons and raids",
+    "/ezb olympus - toggle skipping Olympus guilds (and your OlympusMute list)",
 }
 
 local COMMANDS = {
@@ -428,6 +494,10 @@ local COMMANDS = {
     instances = function()
         EzBlessingsDB.hideInInstances = not EzBlessingsDB.hideInInstances
         Print(EzBlessingsDB.hideInInstances and "Hidden in dungeons and raids." or "Shown in dungeons and raids.")
+    end,
+    olympus = function()
+        EzBlessingsDB.skipUnworthy = not EzBlessingsDB.skipUnworthy
+        Print(EzBlessingsDB.skipUnworthy and "The unworthy get no blessing." or "The unworthy are blessed again.")
     end,
 }
 

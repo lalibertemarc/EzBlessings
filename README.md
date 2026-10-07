@@ -11,7 +11,7 @@ Paladin lore rests on the Three Virtues of the Light that Uther the Lightbringer
 - **Every class gets something.** When a class has no real use for any blessing left, it still gets Might as a last resort instead of nothing.
 - **Every level gets something.** A low-level player who can't take the top rank gets the highest rank their level allows instead of nothing.
 
-The paladin is the hand that always gives.
+The paladin is the hand that always gives. Almost always: see `/ezb olympus`.
 
 ## Features
 
@@ -46,6 +46,7 @@ Use `/ezb` or `/ezblessings`.
 | `/ezb lock` / `/ezb unlock` | Lock or unlock the button (Shift-drag always moves it) |
 | `/ezb reset` | Reset the button position |
 | `/ezb instances` | Toggle hiding the button in dungeons and raids (hidden by default, since the game hides buffs there) |
+| `/ezb olympus` | Toggle skipping players whose guild name contains "Olympus" (off by default). The button shows "Unworthy" and casts nothing on them. With OlympusMute installed, its guild list, guild whitelist, player lists and name keywords are used; otherwise edit the list in `Data.lua` |
 
 ## Default priorities
 

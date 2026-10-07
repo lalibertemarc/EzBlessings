@@ -61,5 +61,9 @@ ns.TANK_PRIORITY = {
     PALADIN = { "KINGS", "WISDOM", "LIGHT", "MIGHT" },
 }
 
+-- Case-insensitive parts of guild names whose members get no blessing while /ezb olympus is on.
+-- Only used without OlympusMute; with it installed, its own lists are used instead.
+ns.UNWORTHY_GUILDS = { "olympus" }
+
 -- Seconds left on your own blessing before suggesting a refresh.
 ns.REFRESH_THRESHOLD = 1200

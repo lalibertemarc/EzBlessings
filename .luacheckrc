@@ -19,6 +19,9 @@ read_globals = {
     "C_Spell", "C_SpellBook", "C_UnitAuras", "C_Timer", "C_Secrets", "issecretvalue",
     -- Global APIs
     "GetSpellInfo", "GetSpellSubtext", "IsSpellKnown", "IsSpellInRange", "UnitBuff", "UnitClass", "UnitName", "UnitLevel",
-    "UnitIsUnit", "UnitInParty", "UnitInRaid", "UnitExists", "UnitIsPlayer", "UnitIsFriend", "UnitIsDeadOrGhost",
+    "UnitIsUnit", "UnitInParty", "UnitInRaid", "UnitExists", "UnitIsPlayer", "UnitIsFriend", "UnitIsDeadOrGhost", "GetGuildInfo",
+    "UnitGUID", "GetUnitName", "GetNormalizedRealmName", "GetRealmName",
     "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown", "IsMounted", "IsInInstance",
+    -- Other addons (optional)
+    "OlympusMuteDB",
 }

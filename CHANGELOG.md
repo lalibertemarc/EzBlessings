@@ -1,5 +1,10 @@
 # EzBlessings
 
+## Unreleased
+
+- **Compassion has its limits.** Uther taught that the Light is for all, but even the Silver Hand never swore to bless those who kneel to a mountain of false gods. The new `/ezb olympus` vow (off by default) withholds your blessings from anyone whose guild name contains "Olympus", in every spelling they hide behind. The button reads "Unworthy", casts nothing, and the tooltip names the guild that sealed their fate.
+- **The ledger of the fallen.** If you carry OlympusMute, EzBlessings reads from its book: guild names you've added, guilds you've pardoned, players you've marked by hand or chosen to spare, and its character-name keywords. A heretic whose guild tag hasn't loaded yet is still judged by the guild OlympusMute last saw them in.
+
 ## v1.5.0
 
 - Druids, paladins and shamans now get Blessing of Kings first, then Wisdom. Mages, warlocks and priests still get Wisdom first.

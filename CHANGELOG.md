@@ -1,5 +1,9 @@
 # EzBlessings
 
+## Unreleased
+
+- Refresh warning now triggers with 20 minutes left instead of 5, so your blessings are recommended for recast sooner.
+
 ## v1.3.0
 
 - The button icon turns red when the target is out of range of the recommended blessing.

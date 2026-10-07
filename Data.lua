@@ -62,4 +62,4 @@ ns.TANK_PRIORITY = {
 }
 
 -- Seconds left on your own blessing before suggesting a refresh.
-ns.REFRESH_THRESHOLD = 300
+ns.REFRESH_THRESHOLD = 1200

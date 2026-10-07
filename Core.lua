@@ -331,10 +331,10 @@ local function InHiddenInstance()
     return kind == "party" or kind == "raid"
 end
 
--- Red icon, like action bars, while the recommended blessing can't reach the target.
+-- Red icon, like action bars, while the recommended blessing can't be cast: target out of range or you're mounted.
 local function UpdateRange()
     local rec = current and current.rec
-    if rec and InRange(rec.spellId, "target") == false then
+    if rec and (IsMounted() or InRange(rec.spellId, "target") == false) then
         btn.icon:SetVertexColor(1, 0.25, 0.25)
     else
         btn.icon:SetVertexColor(1, 1, 1)

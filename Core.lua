@@ -329,8 +329,12 @@ end
 btn:SetScript("OnDragStart", function(self)
     if InCombatLockdown() or (EzBlessingsDB.locked and not IsShiftKeyDown()) then return end
     self:StartMoving()
+    self.moving = true
 end)
+-- Also fires after a drag that never started (locked): saving then would store the default anchor without TargetFrame.
 btn:SetScript("OnDragStop", function(self)
+    if not self.moving then return end
+    self.moving = false
     self:StopMovingOrSizing()
     local point, _, relPoint, x, y = self:GetPoint()
     EzBlessingsDB.pos = { point, relPoint, x, y }
@@ -537,6 +541,9 @@ ev:SetScript("OnEvent", function(self, event, unit)
         EzBlessingsDB.tanks = EzBlessingsDB.tanks or {}
         if EzBlessingsDB.locked == nil then EzBlessingsDB.locked = true end
         if EzBlessingsDB.hideInInstances == nil then EzBlessingsDB.hideInInstances = true end
+        -- Older versions could save the default anchor without TargetFrame, putting the button off-screen.
+        local p = EzBlessingsDB.pos
+        if p and p[1] == "LEFT" and p[2] == "RIGHT" and p[3] == -10 and p[4] == 10 then EzBlessingsDB.pos = nil end
         ApplyPosition()
         for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "UNIT_AURA", "SPELLS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }) do
             self:RegisterEvent(e)

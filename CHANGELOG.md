@@ -1,6 +1,6 @@
 # EzBlessings
 
-## Unreleased
+## v1.5.0
 
 - Druids, paladins and shamans now get Blessing of Kings first, then Wisdom. Mages, warlocks and priests still get Wisdom first.
 

@@ -1,5 +1,10 @@
 # EzBlessings
 
+## Unreleased
+
+- **The Light needs no altar.** A paladin who walks Azeroth with eyes on the horizon, not on their action bars, can still bless the faithful. Two new key bindings under Options > Keybindings > EzBlessings cast the recommended blessing (or its Greater form) on your target with a single word of prayer. They work even when the interface is hidden away, so you can bless your companions mid-cinematic with EzCinematic.
+- With no worthy target in sight, the binding stays silent instead of calling down your last blessing on empty air.
+
 ## v1.6.0
 
 - **Compassion has its limits.** Uther taught that the Light is for all, but even the Silver Hand never swore to bless those who kneel to a mountain of false gods. The new `/ezb olympus` vow (off by default) withholds your blessings from anyone whose guild name contains "Olympus", in every spelling they hide behind. The button reads "Unworthy", casts nothing, and the tooltip names the guild that sealed their fate.

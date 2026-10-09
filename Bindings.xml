@@ -1,0 +1,4 @@
+<Bindings>
+	<Binding name="CLICK EzBlessingsButton:LeftButton" category="EzBlessings"/>
+	<Binding name="CLICK EzBlessingsButton:RightButton" category="EzBlessings"/>
+</Bindings>

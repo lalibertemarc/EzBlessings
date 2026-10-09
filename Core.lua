@@ -1,6 +1,11 @@
 -- EzBlessings: recommends the Paladin blessing your friendly target needs.
 local _, ns = ...
 
+-- Key bindings (Bindings.xml) click the button, so they work with the UI hidden (e.g. EzCinematic).
+BINDING_HEADER_EZBLESSINGS = "EzBlessings"
+_G["BINDING_NAME_CLICK EzBlessingsButton:LeftButton"] = "Cast recommended blessing"
+_G["BINDING_NAME_CLICK EzBlessingsButton:RightButton"] = "Cast recommended Greater blessing"
+
 if select(2, UnitClass("player")) ~= "PALADIN" then return end
 
 ---------------------------------------------------------------------------
@@ -391,6 +396,7 @@ local function ShowTooltip()
         GameTooltip:AddLine(format("All covered: refreshes %s's blessing.", current.rec.source or "another paladin"), 0.6, 0.6, 0.6)
     end
     GameTooltip:AddLine("Left-click: cast blessing   Right-click: Greater", 0.6, 0.6, 0.6)
+    GameTooltip:AddLine("Key bindings: Options > Keybindings > EzBlessings", 0.6, 0.6, 0.6)
     GameTooltip:AddLine(EzBlessingsDB.locked and "Shift-drag to move" or "Drag to move", 0.6, 0.6, 0.6)
     GameTooltip:Show()
 end
@@ -431,7 +437,12 @@ local function Update()
 
     if not current then
         btn:SetAlpha(0)
-        if not inCombat then btn:EnableMouse(false) end
+        -- Clear the spell too, so the key binding can't cast on nothing.
+        if not inCombat then
+            btn:EnableMouse(false)
+            btn:SetAttribute("spell", nil)
+            btn:SetAttribute("spell2", nil)
+        end
     else
         local rec = current.rec
         local b = rec and blessing[rec.key]

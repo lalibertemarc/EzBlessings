@@ -7,6 +7,8 @@ globals = {
     "SLASH_EZBLESSINGS1",
     "SLASH_EZBLESSINGS2",
     "SlashCmdList",
+    "BINDING_HEADER_EZBLESSINGS",
+    "_G",
 }
 
 read_globals = {

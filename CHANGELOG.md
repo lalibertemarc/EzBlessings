@@ -1,6 +1,6 @@
 # EzBlessings
 
-## Unreleased
+## v1.7.0
 
 - **The Light needs no altar.** A paladin who walks Azeroth with eyes on the horizon, not on their action bars, can still bless the faithful. Two new key bindings under Options > Keybindings > EzBlessings cast the recommended blessing (or its Greater form) on your target with a single word of prayer. They work even when the interface is hidden away, so you can bless your companions mid-cinematic with EzCinematic.
 - With no worthy target in sight, the binding stays silent instead of calling down your last blessing on empty air.

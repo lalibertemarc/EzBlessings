@@ -1,6 +1,6 @@
 # EzBlessings
 
-## Unreleased
+## v1.8.0
 
 - Warlocks now get Blessing of Kings first, then Wisdom, then Might (ahead of Salvation and Light).
 

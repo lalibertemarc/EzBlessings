@@ -40,7 +40,7 @@ World of Warcraft\_classic_beta_\Interface\AddOns\
 Type `/ezb` (or open Esc > Options > AddOns > EzBlessings) for the options page:
 
 - **Announce**: Off, Say (/s) or Whisper the target, and whether to use only your own lines.
-- **Your lines**: type a line and click Add (or press Enter); each one in the list has a Remove button. `%t` is the target's name, `%b` the blessing cast. "Try a line" shows a random line as it would go out on your target.
+- **Your lines**: type a line and click Add (or press Enter); each one in the list has a Remove button. `%t` is the target's full name (a class-colored player link in your own chat), `%b` the blessing cast. "Try a line" shows a random line as it would go out on your target.
 - **Button**: lock position, hide in dungeons and raids, withhold blessings from the unworthy, reset position, and a shortcut to the Key Bindings page.
 
 ## Commands
@@ -59,7 +59,7 @@ Use `/ezb` or `/ezblessings`. `/ezb` alone opens the options page; `/ezb help` l
 | `/ezb olympus` | Toggle skipping players whose guild name contains "Olympus" (off by default). The button shows "Unworthy" and casts nothing on them. With OlympusMute installed, its guild list, guild whitelist, player lists and name keywords are used; otherwise edit the list in `Data.lua` |
 | `/ezb announce off \| say \| whisper` | Say a line in /say, or whisper it to the target, when you bless them from the button or a key binding (off by default) |
 | `/ezb message` | List your own announce lines |
-| `/ezb message add <text>` | Add a line. `%t` is replaced by the target's name, `%b` by the blessing cast |
+| `/ezb message add <text>` | Add a line. `%t` is replaced by the target's full name, `%b` by the blessing cast |
 | `/ezb message remove <n>` / `/ezb message clear` | Remove one of your lines, or all of them |
 | `/ezb message mine` | Toggle using only your lines instead of mixing them in with the built-in ones |
 | `/ezb message test` | Show a line as it could go out on your target now |

@@ -1,5 +1,5 @@
 -- EzBlessings lines: what you say or whisper on cast while /ezb announce is on. Edit them here.
--- One is picked at random (never the same twice in a row). %t = target's name, %b = blessing cast.
+-- One is picked at random (never the same twice in a row). %t = target's full name (linked in your chat), %b = blessing cast.
 -- Your own lines (/ezb message add) are mixed in; /ezb message mine uses only yours.
 local _, ns = ...
 

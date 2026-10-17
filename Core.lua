@@ -447,6 +447,38 @@ local function FormatMessage(line, name, spellName)
     return msg
 end
 
+-- The server won't take player links in sent chat, so the target's name goes out as plain text and
+-- is turned into a link when your own line comes back. Only you see the link; clicking it works like
+-- any player link (whisper, EzMark's Alt+click...).
+local said = {} -- your last few lines, newest last: { msg, name, class }
+
+local function Remember(msg, name, class)
+    said[#said + 1] = { msg = msg, name = name, class = class }
+    if #said > 5 then table.remove(said, 1) end
+end
+
+-- Class-colored link on the full name, "First Surname" like Blizzard's own chat links: whispers
+-- need the surname.
+local function NameLink(name, class)
+    local c = RAID_CLASS_COLORS[class]
+    local link = format("|Hplayer:%s|h%s|h", name, name)
+    return c and c.colorStr and format("|c%s%s|r", c.colorStr, link) or link
+end
+
+-- CHAT_MSG_SAY / CHAT_MSG_WHISPER_INFORM filter: returning false keeps the line; the message, if any,
+-- replaces it.
+local function LinkTarget(_, _, msg, ...)
+    if issecret(msg) then return false end
+    for _, entry in ipairs(said) do
+        if entry.msg == msg then
+            local link = NameLink(entry.name, entry.class)
+            local pattern = entry.name:gsub("%p", "%%%0")
+            return false, (msg:gsub(pattern, function() return link end)), ...
+        end
+    end
+    return false
+end
+
 -- Runs inside the click or key press, before the secure cast: addons can only send chat then.
 -- Skipped when the cast would fail anyway (range, mounted, cooldown, mana), so a spammed press says it once.
 btn:SetScript("PreClick", function(self, button)
@@ -455,12 +487,13 @@ btn:SetScript("PreClick", function(self, button)
     if not (channel == "say" or channel == "whisper") or not cast or ChatLocked() then return end
     if not ValidTarget("target") or UnitIsUnit("target", "player") then return end
     if IsMounted() or InRange(cast.id, "target") == false or OnCooldown(cast.id) or not Usable(cast.id) then return end
-    local first, full = UnitName("target"), FullName("target")
-    if not full then return end
+    local name = FullName("target")
+    if not name then return end
     local _, class = UnitClass("target")
-    local msg = FormatMessage(PickLine(Lines(cast, class)), first, cast.name)
+    local msg = FormatMessage(PickLine(Lines(cast, class)), name, cast.name)
+    Remember(msg, name, class)
     if channel == "whisper" then
-        SendChat(msg, "WHISPER", full)
+        SendChat(msg, "WHISPER", name)
     else
         SendChat(msg, "SAY")
     end
@@ -642,8 +675,7 @@ local HELP = {
 -- A line as it could go out on your target (or a stand-in) now. Doesn't count as said.
 local function Example()
     local valid = ValidTarget("target")
-    local name = valid and UnitName("target")
-    if not name or issecret(name) then name = "Lothar" end
+    local name = valid and FullName("target") or "Anduin Lothar"
     local class = valid and select(2, UnitClass("target"))
     local cast = current and current.casts and current.casts.LeftButton or { name = blessing.KINGS.name, key = "KINGS" }
     local lines = Lines(cast, class)
@@ -786,6 +818,11 @@ ev:SetScript("OnEvent", function(self, event, unit)
         if p and p[1] == "LEFT" and p[2] == "RIGHT" and p[3] == -10 and p[4] == 10 then EzBlessingsDB.pos = nil end
         ApplyPosition()
         ns.BuildSettings()
+        local AddFilter = (ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter) or ChatFrame_AddMessageEventFilter
+        if AddFilter then
+            AddFilter("CHAT_MSG_SAY", LinkTarget)
+            AddFilter("CHAT_MSG_WHISPER_INFORM", LinkTarget)
+        end
         for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "UNIT_AURA", "SPELLS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }) do
             self:RegisterEvent(e)
         end

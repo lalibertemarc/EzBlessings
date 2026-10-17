@@ -1,5 +1,9 @@
 # EzBlessings
 
+## v1.9.1
+
+- Announces now name your target in full, first name and surname, and in your own chat that name becomes a class-colored player link: click it to whisper them, or Alt+click it with EzMark to mark them. Only you see the link; everyone else reads the plain name.
+
 ## v1.9.0
 
 - **A blessing is also a word.** The Light flows through your hands, but your companions deserve to hear it too. `/ezb announce say` speaks a line when you bless your target, `/ezb announce whisper` murmurs it to them alone, and `/ezb announce off` (the default) keeps your blessings silent.

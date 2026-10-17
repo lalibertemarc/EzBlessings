@@ -103,7 +103,7 @@ function ns.BuildSettings()
     -- Your lines -------------------------------------------------------------
     local linesLabel = Label("GameFontNormal", "Your lines")
     linesLabel:SetPoint("TOPLEFT", onlyMine, "BOTTOMLEFT", 4, -12)
-    local tokens = Label("GameFontDisableSmall", "%t = your target's name, %b = the blessing you cast")
+    local tokens = Label("GameFontDisableSmall", "%t = your target's full name, %b = the blessing you cast")
     tokens:SetPoint("LEFT", linesLabel, "RIGHT", 10, 0)
 
     local input = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")

@@ -15,7 +15,7 @@ read_globals = {
     -- Lua / WoW utility
     "format", "floor", "strtrim", "wipe", "unpack",
     -- Frames & UI
-    "CreateFrame", "UIParent", "TargetFrame", "GameTooltip", "DEFAULT_CHAT_FRAME", "Settings", "GameFontHighlight",
+    "CreateFrame", "UIParent", "TargetFrame", "GameTooltip", "DEFAULT_CHAT_FRAME", "Settings", "GameFontHighlight", "ChatFrameUtil", "ChatFrame_AddMessageEventFilter",
     "RAID_CLASS_COLORS", "NORMAL_FONT_COLOR",
     -- Namespaced APIs
     "C_Spell", "C_SpellBook", "C_UnitAuras", "C_Timer", "C_Secrets", "C_ChatInfo", "issecretvalue",

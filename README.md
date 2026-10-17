@@ -23,6 +23,7 @@ The paladin is the hand that always gives. Almost always: see `/ezb olympus`.
 - **Aware of other paladins**: blessings another paladin already cast are skipped, so you suggest the next one down. If they've covered everything, the button offers to refresh the top-priority one.
 - **Refresh warnings**: the border turns yellow when your blessing on the target has under 20 minutes left.
 - **Range warning**: the icon turns red when the target is out of range of the blessing.
+- **Announce your blessings** (optional): say a line in /say or whisper it to the target when you cast, picked at random from about 100 built-in lines plus your own.
 - **Full breakdown on hover**: the tooltip lists the target's whole priority, who cast what, and time left.
 - **Works in any client language.**
 
@@ -34,9 +35,17 @@ Install from CurseForge or Wago, or download the zip from the [Releases](../../r
 World of Warcraft\_classic_beta_\Interface\AddOns\
 ```
 
+## Options
+
+Type `/ezb` (or open Esc > Options > AddOns > EzBlessings) for the options page:
+
+- **Announce**: Off, Say (/s) or Whisper the target, and whether to use only your own lines.
+- **Your lines**: type a line and click Add (or press Enter); each one in the list has a Remove button. `%t` is the target's name, `%b` the blessing cast. "Try a line" shows a random line as it would go out on your target.
+- **Button**: lock position, hide in dungeons and raids, withhold blessings from the unworthy, reset position, and a shortcut to the Key Bindings page.
+
 ## Commands
 
-Use `/ezb` or `/ezblessings`.
+Use `/ezb` or `/ezblessings`. `/ezb` alone opens the options page; `/ezb help` lists the commands.
 
 
 | Command | Does |
@@ -48,6 +57,12 @@ Use `/ezb` or `/ezblessings`.
 | `/ezb reset` | Reset the button position |
 | `/ezb instances` | Toggle hiding the button in dungeons and raids (hidden by default, since the game hides buffs there) |
 | `/ezb olympus` | Toggle skipping players whose guild name contains "Olympus" (off by default). The button shows "Unworthy" and casts nothing on them. With OlympusMute installed, its guild list, guild whitelist, player lists and name keywords are used; otherwise edit the list in `Data.lua` |
+| `/ezb announce off \| say \| whisper` | Say a line in /say, or whisper it to the target, when you bless them from the button or a key binding (off by default) |
+| `/ezb message` | List your own announce lines |
+| `/ezb message add <text>` | Add a line. `%t` is replaced by the target's name, `%b` by the blessing cast |
+| `/ezb message remove <n>` / `/ezb message clear` | Remove one of your lines, or all of them |
+| `/ezb message mine` | Toggle using only your lines instead of mixing them in with the built-in ones |
+| `/ezb message test` | Show a line as it could go out on your target now |
 
 ## Default priorities
 
@@ -63,6 +78,12 @@ Use `/ezb` or `/ezblessings`.
 | Paladin (tank) | Kings > Wisdom > Light > Might |
 
 To change them, edit `Data.lua`.
+
+## Announcing
+
+Each announce is one line picked at random (never the same twice in a row) from `Lines.lua`: 40 general lines, plus 5 for the blessing being cast and 3 for the target's class. Renewing your own blessing before it drops uses 10 renewal lines instead. Lines you add with `/ezb message add` are mixed in. Edit `Lines.lua` to change the built-in ones.
+
+The line only goes out when you cast from the EzBlessings button or its key bindings (the game only lets addons send chat inside a click or key press), and only when the cast can succeed: never on yourself, and not while mounted, out of range, out of mana or on cooldown. Casts from your action bars stay silent. The game blocks addon chat during some encounters; the announce is skipped there.
 
 ## In combat
 

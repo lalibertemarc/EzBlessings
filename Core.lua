@@ -57,6 +57,45 @@ local function AurasHidden()
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
 end
 
+-- True while the spell (or the global cooldown) is cooling down; false when unknown.
+local function OnCooldown(id)
+    local start, duration
+    if C_Spell and C_Spell.GetSpellCooldown then
+        local cd = C_Spell.GetSpellCooldown(id)
+        if cd then start, duration = cd.startTime, cd.duration end
+    elseif GetSpellCooldown then
+        start, duration = GetSpellCooldown(id)
+    end
+    if not (start and duration) or issecret(start) or issecret(duration) then return false end
+    return start > 0 and duration > 0 and start + duration > GetTime()
+end
+
+-- False when the game says the spell can't be cast right now (e.g. out of mana); true when unknown.
+local function Usable(id)
+    local usable
+    if C_Spell and C_Spell.IsSpellUsable then
+        usable = C_Spell.IsSpellUsable(id)
+    elseif IsUsableSpell then
+        usable = IsUsableSpell(id)
+    end
+    if usable == nil or issecret(usable) then return true end
+    return usable and true or false
+end
+
+-- chatType: "SAY", or "WHISPER" with target.
+local function SendChat(msg, chatType, target)
+    if C_ChatInfo and C_ChatInfo.SendChatMessage then
+        C_ChatInfo.SendChatMessage(msg, chatType, nil, target)
+    else
+        SendChatMessage(msg, chatType, nil, target)
+    end
+end
+
+-- Encounters and similar lock addon chat (C_ChatInfo.InChatMessagingLockdown); sending then is blocked.
+local function ChatLocked()
+    return C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()
+end
+
 -- Returns name, sourceUnit, expirationTime of the i-th buff; nil past the end; false if auras are hidden.
 local function BuffAt(unit, i)
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
@@ -126,6 +165,15 @@ end
 local function UnitKey(unit)
     local name = UnitName(unit)
     return name and name:lower()
+end
+
+-- "First Surname"; Forever's UnitName returns the surname where retail returns the realm.
+-- Whispers need the full name.
+local function FullName(unit)
+    local name, surname = UnitName(unit)
+    if not name or issecret(name) then return nil end
+    if surname and not issecret(surname) and surname ~= "" then return name .. " " .. surname end
+    return name
 end
 
 local function ValidTarget(unit)
@@ -215,7 +263,8 @@ end
 -- "nogroup" (group-only blessing, target not in your group).
 -- Entry: { key, state, spellId (rank to cast), source, remaining }
 -- Result: { name, class, className, tank, grouped, hidden, unworthy, list = {entries}, done = bool,
---           rec = entry to cast or nil, spell / greater = button cast strings for rec, refresh = bool }
+--           rec = entry to cast or nil, spell / greater = button cast strings for rec, refresh = bool,
+--           casts = mouse button -> { id, name, key, refresh } of the spell it casts }
 -- hidden = auras couldn't be read, so the result is class priority only.
 -- unworthy = why the target gets no blessing (see Unworthy); nothing is recommended.
 -- refresh = every slot is covered by other paladins, so rec recasts the most wanted of theirs.
@@ -278,6 +327,13 @@ local function Evaluate(unit)
         -- Greater blessings only reach party/raid members.
         local greaterId = r.grouped and BestRank(blessing[r.rec.key].greater, level)
         r.greater = greaterId and CastName(greaterId)
+        -- What each mouse button casts, for /ezb announce.
+        local key, renew = r.rec.key, r.rec.state == "expiring"
+        local normal = { id = r.rec.spellId, name = blessing[key].name, key = key, refresh = renew }
+        r.casts = {
+            LeftButton = normal,
+            RightButton = greaterId and { id = greaterId, name = SpellInfo(greaterId), key = key, refresh = renew } or normal,
+        }
     end
     return r
 end
@@ -346,6 +402,71 @@ btn:SetScript("OnDragStop", function(self)
 end)
 
 ---------------------------------------------------------------------------
+-- Announce (/ezb announce, /ezb message)
+---------------------------------------------------------------------------
+local ANNOUNCE_TEXT = { say = "in /say", whisper = "by whisper" }
+
+-- Lines that fit this cast, from Lines.lua: the renewal ones for your own fading blessing, else the
+-- general ones plus the blessing's and the target class's own. Your lines (/ezb message add) are mixed
+-- in, or used alone with /ezb message mine.
+local function Lines(cast, class)
+    local mine = EzBlessingsDB.messages
+    if EzBlessingsDB.onlyMine and #mine > 0 then return mine end
+    local lines = {}
+    local function Add(t)
+        for _, line in ipairs(t or {}) do lines[#lines + 1] = line end
+    end
+    if cast.refresh then
+        Add(ns.REFRESH_LINES)
+    else
+        Add(ns.LINES)
+        Add(ns.BLESSING_LINES[cast.key])
+        Add(ns.CLASS_LINES[class])
+    end
+    Add(mine)
+    return lines
+end
+
+local lastLine -- said last time, so the same line never comes twice in a row
+
+local function PickLine(lines)
+    local i = math.random(#lines)
+    if #lines > 1 and lines[i] == lastLine then i = i % #lines + 1 end
+    lastLine = lines[i]
+    return lines[i]
+end
+
+-- The line with %t (target) and %b (blessing) filled in, cut to chat's 255-byte limit.
+local function FormatMessage(line, name, spellName)
+    local msg = line
+        :gsub("%%t", function() return name end)
+        :gsub("%%b", function() return spellName end)
+    if #msg > 255 then
+        msg = msg:sub(1, 255):gsub("[\192-\255][\128-\191]*$", "") -- don't leave half a UTF-8 character
+    end
+    return msg
+end
+
+-- Runs inside the click or key press, before the secure cast: addons can only send chat then.
+-- Skipped when the cast would fail anyway (range, mounted, cooldown, mana), so a spammed press says it once.
+btn:SetScript("PreClick", function(self, button)
+    local channel = EzBlessingsDB.announce
+    local cast = self.casts and self.casts[button]
+    if not (channel == "say" or channel == "whisper") or not cast or ChatLocked() then return end
+    if not ValidTarget("target") or UnitIsUnit("target", "player") then return end
+    if IsMounted() or InRange(cast.id, "target") == false or OnCooldown(cast.id) or not Usable(cast.id) then return end
+    local first, full = UnitName("target"), FullName("target")
+    if not full then return end
+    local _, class = UnitClass("target")
+    local msg = FormatMessage(PickLine(Lines(cast, class)), first, cast.name)
+    if channel == "whisper" then
+        SendChat(msg, "WHISPER", full)
+    else
+        SendChat(msg, "SAY")
+    end
+end)
+
+---------------------------------------------------------------------------
 -- Tooltip
 ---------------------------------------------------------------------------
 local STATE_TEXT = {
@@ -391,11 +512,15 @@ local function ShowTooltip()
     GameTooltip:AddLine(" ")
     if current.spell then
         GameTooltip:AddLine("Casts " .. current.spell, 1, 0.82, 0)
+        if EzBlessingsDB.announce then
+            GameTooltip:AddLine("and announces it " .. ANNOUNCE_TEXT[EzBlessingsDB.announce], 0.6, 0.6, 0.6)
+        end
     end
     if current.refresh then
         GameTooltip:AddLine(format("All covered: refreshes %s's blessing.", current.rec.source or "another paladin"), 0.6, 0.6, 0.6)
     end
     GameTooltip:AddLine("Left-click: cast blessing   Right-click: Greater", 0.6, 0.6, 0.6)
+    GameTooltip:AddLine("Options and announce lines: /ezb", 0.6, 0.6, 0.6)
     GameTooltip:AddLine("Key bindings: Options > Keybindings > EzBlessings", 0.6, 0.6, 0.6)
     GameTooltip:AddLine(EzBlessingsDB.locked and "Shift-drag to move" or "Drag to move", 0.6, 0.6, 0.6)
     GameTooltip:Show()
@@ -442,6 +567,7 @@ local function Update()
             btn:EnableMouse(false)
             btn:SetAttribute("spell", nil)
             btn:SetAttribute("spell2", nil)
+            btn.casts = nil
         end
     else
         local rec = current.rec
@@ -453,6 +579,7 @@ local function Update()
             btn:EnableMouse(true)
             btn:SetAttribute("spell", spell)
             btn:SetAttribute("spell2", current.greater or spell)
+            btn.casts = current.casts -- kept in step with the attributes, so announces name what's really cast
         end
         local stale = inCombat and btn:GetAttribute("spell") ~= spell
 
@@ -473,6 +600,7 @@ local function Update()
 
     if btn.hover then ShowTooltip() end
 end
+ns.Update = Update
 
 ---------------------------------------------------------------------------
 -- Slash commands
@@ -488,7 +616,15 @@ local function SetTank(arg, value, verb)
     Print(name .. " " .. verb)
 end
 
+function ns.ResetPosition()
+    if InCombatLockdown() then return Print("Can't move in combat.") end
+    EzBlessingsDB.pos = nil
+    ApplyPosition()
+    Print("Position reset.")
+end
+
 local HELP = {
+    "/ezb - open the options",
     "/ezb tank [name] - mark player (or target) as tank",
     "/ezb untank [name] - unmark tank",
     "/ezb tanks - list tanks",
@@ -496,7 +632,79 @@ local HELP = {
     "/ezb reset - reset button position",
     "/ezb instances - toggle hiding the button in dungeons and raids",
     "/ezb olympus - toggle skipping Olympus guilds (and your OlympusMute list)",
+    "/ezb announce off | say | whisper - say or whisper a line to the target when you bless them",
+    "/ezb message - list your own lines (mixed in with the built-in ones)",
+    "/ezb message add <text> | remove <n> | clear - edit them; %t = target, %b = blessing",
+    "/ezb message mine - toggle using only your lines",
+    "/ezb message test - show a line as it could go out now",
 }
+
+-- A line as it could go out on your target (or a stand-in) now. Doesn't count as said.
+local function Example()
+    local valid = ValidTarget("target")
+    local name = valid and UnitName("target")
+    if not name or issecret(name) then name = "Lothar" end
+    local class = valid and select(2, UnitClass("target"))
+    local cast = current and current.casts and current.casts.LeftButton or { name = blessing.KINGS.name, key = "KINGS" }
+    local lines = Lines(cast, class)
+    return FormatMessage(lines[math.random(#lines)], name, cast.name)
+end
+
+-- Adds one of your own lines; returns its number, or nil when there's nothing to add.
+function ns.AddLine(text)
+    text = strtrim((text:gsub("|", ""))) -- "|" starts chat escape codes, which the server rejects
+    if text == "" then return nil end
+    local mine = EzBlessingsDB.messages
+    mine[#mine + 1] = text
+    return #mine, text
+end
+
+-- Removes your line number i; returns its text, or nil when there's no such line.
+function ns.RemoveLine(i)
+    local mine = EzBlessingsDB.messages
+    if not (i and mine[i]) then return nil end
+    return table.remove(mine, i)
+end
+
+ns.Example = Example
+
+local function AnnounceHint()
+    if not EzBlessingsDB.announce then Print("Lines go out once you turn on /ezb announce say | whisper") end
+end
+
+-- /ezb message subcommands.
+local MESSAGE = {
+    list = function()
+        local mine = EzBlessingsDB.messages
+        Print(format("Your lines (%d), %s:", #mine,
+            EzBlessingsDB.onlyMine and "used alone" or "mixed in with the built-in ones"))
+        for i, line in ipairs(mine) do Print(format("%d. %s", i, line)) end
+        if #mine == 0 then Print("None yet. /ezb message add <text>; %t = target, %b = blessing") end
+        AnnounceHint()
+    end,
+    add = function(text)
+        local i, line = ns.AddLine(text)
+        if not i then return Print("/ezb message add <text>; %t = target, %b = blessing") end
+        Print(format("Line %d added: %s", i, line))
+        AnnounceHint()
+    end,
+    remove = function(arg)
+        local line = ns.RemoveLine(tonumber(arg))
+        if not line then return Print("/ezb message remove <number>, from /ezb message") end
+        Print("Removed: " .. line)
+    end,
+    clear = function()
+        wipe(EzBlessingsDB.messages)
+        Print("Your lines are cleared. The built-in ones remain.")
+    end,
+    mine = function()
+        EzBlessingsDB.onlyMine = not EzBlessingsDB.onlyMine
+        Print(EzBlessingsDB.onlyMine and "Only your lines are used (the built-in ones while you have none)."
+            or "Your lines are mixed in with the built-in ones.")
+    end,
+    test = function() Print("Example: " .. Example()) end,
+}
+MESSAGE.del, MESSAGE.reset = MESSAGE.remove, MESSAGE.clear
 
 local COMMANDS = {
     tank   = function(arg) SetTank(arg, true, "marked as tank.") end,
@@ -509,12 +717,7 @@ local COMMANDS = {
     end,
     lock   = function() EzBlessingsDB.locked = true; Print("Locked.") end,
     unlock = function() EzBlessingsDB.locked = false; Print("Unlocked.") end,
-    reset  = function()
-        if InCombatLockdown() then return Print("Can't move in combat.") end
-        EzBlessingsDB.pos = nil
-        ApplyPosition()
-        Print("Position reset.")
-    end,
+    reset  = function() ns.ResetPosition() end,
     instances = function()
         EzBlessingsDB.hideInInstances = not EzBlessingsDB.hideInInstances
         Print(EzBlessingsDB.hideInInstances and "Hidden in dungeons and raids." or "Shown in dungeons and raids.")
@@ -522,6 +725,24 @@ local COMMANDS = {
     olympus = function()
         EzBlessingsDB.skipUnworthy = not EzBlessingsDB.skipUnworthy
         Print(EzBlessingsDB.skipUnworthy and "The unworthy get no blessing." or "The unworthy are blessed again.")
+    end,
+    announce = function(arg)
+        arg = arg:lower()
+        if arg == "off" then
+            EzBlessingsDB.announce = nil
+        elseif ANNOUNCE_TEXT[arg] then
+            EzBlessingsDB.announce = arg
+        elseif arg ~= "" then
+            return Print("/ezb announce off | say | whisper")
+        end
+        local a = EzBlessingsDB.announce
+        Print(a and format("Blessings announced %s, e.g.: %s", ANNOUNCE_TEXT[a], Example()) or "Blessings are cast in silence.")
+    end,
+    message = function(arg)
+        local sub, rest = arg:match("^(%S*)%s*(.-)$")
+        local fn = MESSAGE[sub:lower()] or (sub == "" and MESSAGE.list)
+        if fn then return fn(rest) end
+        Print("/ezb message [add <text> | remove <n> | clear | mine | test]")
     end,
 }
 
@@ -533,6 +754,8 @@ SlashCmdList.EZBLESSINGS = function(msg)
     if fn then
         fn(arg)
         Update()
+    elseif cmd == "" then
+        ns.OpenSettings()
     else
         for _, line in ipairs(HELP) do Print(line) end
     end
@@ -550,12 +773,19 @@ ev:SetScript("OnEvent", function(self, event, unit)
         -- Saved variables are loaded by now; only start listening once they exist.
         EzBlessingsDB = EzBlessingsDB or {}
         EzBlessingsDB.tanks = EzBlessingsDB.tanks or {}
+        EzBlessingsDB.messages = EzBlessingsDB.messages or {}
+        -- Before random lines, /ezb message kept a single line here.
+        if type(EzBlessingsDB.message) == "string" then
+            table.insert(EzBlessingsDB.messages, EzBlessingsDB.message)
+            EzBlessingsDB.message = nil
+        end
         if EzBlessingsDB.locked == nil then EzBlessingsDB.locked = true end
         if EzBlessingsDB.hideInInstances == nil then EzBlessingsDB.hideInInstances = true end
         -- Older versions could save the default anchor without TargetFrame, putting the button off-screen.
         local p = EzBlessingsDB.pos
         if p and p[1] == "LEFT" and p[2] == "RIGHT" and p[3] == -10 and p[4] == 10 then EzBlessingsDB.pos = nil end
         ApplyPosition()
+        ns.BuildSettings()
         for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "UNIT_AURA", "SPELLS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }) do
             self:RegisterEvent(e)
         end

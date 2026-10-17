@@ -8,4 +8,6 @@
 ## X-Curse-Project-ID: 1726933
 
 Data.lua
+Lines.lua
 Core.lua
+Settings.lua

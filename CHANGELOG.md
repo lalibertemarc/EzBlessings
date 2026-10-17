@@ -1,5 +1,13 @@
 # EzBlessings
 
+## v1.9.0
+
+- **A blessing is also a word.** The Light flows through your hands, but your companions deserve to hear it too. `/ezb announce say` speaks a line when you bless your target, `/ezb announce whisper` murmurs it to them alone, and `/ezb announce off` (the default) keeps your blessings silent.
+- **A hundred ways to say it.** Each blessing comes with one of 40 lines picked at random, never the same twice in a row, from Uther's name to "Kneel. Actually, don't." Every blessing has 5 lines of its own (Salvation tells the beasts to look elsewhere), every class 3 (warlocks are blessed despite their demons), and renewing your own fading blessing gets one of 10 lines about renewal.
+- **Your own words.** `/ezb message add <text>` adds your own lines to the mix: `%t` becomes your target's name and `%b` the blessing you cast, Greater ones included. `/ezb message` lists them, `/ezb message remove <n>` and `/ezb message clear` take them away, `/ezb message mine` uses only yours, and `/ezb message test` shows a line as it would go out. The built-in lines live in `Lines.lua`.
+- **An options page.** Esc > Options > AddOns > EzBlessings, or just `/ezb`: pick Off, Say or Whisper, type your own lines into a box and add or remove them with a click, try a random line, and set the button's lock, dungeon hiding and Olympus vow. `/ezb help` lists the slash commands.
+- It only speaks when the blessing can land: never on yourself, never while mounted, out of range, out of mana or on cooldown, so hammering the key says it once.
+
 ## v1.8.0
 
 - Warlocks now get Blessing of Kings first, then Wisdom, then Might (ahead of Salvation and Light).

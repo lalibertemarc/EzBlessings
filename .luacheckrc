@@ -15,12 +15,12 @@ read_globals = {
     -- Lua / WoW utility
     "format", "floor", "strtrim", "wipe", "unpack",
     -- Frames & UI
-    "CreateFrame", "UIParent", "TargetFrame", "GameTooltip", "DEFAULT_CHAT_FRAME",
+    "CreateFrame", "UIParent", "TargetFrame", "GameTooltip", "DEFAULT_CHAT_FRAME", "Settings", "GameFontHighlight",
     "RAID_CLASS_COLORS", "NORMAL_FONT_COLOR",
     -- Namespaced APIs
-    "C_Spell", "C_SpellBook", "C_UnitAuras", "C_Timer", "C_Secrets", "issecretvalue",
+    "C_Spell", "C_SpellBook", "C_UnitAuras", "C_Timer", "C_Secrets", "C_ChatInfo", "issecretvalue",
     -- Global APIs
-    "GetSpellInfo", "GetSpellSubtext", "IsSpellKnown", "IsSpellInRange", "UnitBuff", "UnitClass", "UnitName", "UnitLevel",
+    "GetSpellInfo", "GetSpellSubtext", "IsSpellKnown", "IsSpellInRange", "GetSpellCooldown", "IsUsableSpell", "SendChatMessage", "UnitBuff", "UnitClass", "UnitName", "UnitLevel",
     "UnitIsUnit", "UnitInParty", "UnitInRaid", "UnitExists", "UnitIsPlayer", "UnitIsFriend", "UnitIsDeadOrGhost", "GetGuildInfo",
     "UnitGUID", "GetUnitName", "GetNormalizedRealmName", "GetRealmName",
     "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown", "IsMounted", "IsInInstance",

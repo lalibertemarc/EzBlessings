@@ -1,5 +1,12 @@
 # EzBlessings
 
+## v1.10.0
+
+- **A vow, not a grudge.** With `/ezb olympus` on and announcing turned on, clicking an unworthy target no longer does nothing in silence: you tell them, in /say or by whisper, why no blessing comes, and how to earn it back. One of 20 lines, firm but never cruel, each leaving the way open: "Repent. The Light has not closed its door to you, and neither have I." At most one refusal every 10 seconds, however often you click.
+- **Honesty is a virtue too.** When Blessing of Might is all that's left for a priest, mage or warlock, the announce no longer pretends it helps: one of 15 lines admits it, from "Purely ceremonial" to "about as useful as boots on a murloc".
+- **Credit where it's due.** When other paladins already cover everything and the button offers a "(refresh)", the announce says so and names them: one of 10 lines, like "Bob beat me to it. Here's Blessing of Kings again, freshly blessed." Renewing your own fading blessing keeps its own 10 lines.
+- "Try a line" on the options page shows a refusal while your target is unworthy.
+
 ## v1.9.1
 
 - Announces now name your target in full, first name and surname, and in your own chat that name becomes a class-colored player link: click it to whisper them, or Alt+click it with EzMark to mark them. Only you see the link; everyone else reads the plain name.

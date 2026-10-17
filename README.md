@@ -81,7 +81,7 @@ To change them, edit `Data.lua`.
 
 ## Announcing
 
-Each announce is one line picked at random (never the same twice in a row) from `Lines.lua`: 40 general lines, plus 5 for the blessing being cast and 3 for the target's class. Renewing your own blessing before it drops uses 10 renewal lines instead. Lines you add with `/ezb message add` are mixed in. Edit `Lines.lua` to change the built-in ones.
+Each announce is one line picked at random (never the same twice in a row) from `Lines.lua`: 40 general lines, plus 5 for the blessing being cast and 3 for the target's class. Renewing your own blessing before it drops uses 10 renewal lines instead, and renewing another paladin's (the button's "(refresh)") uses 10 lines that name them (`%p`). With `/ezb olympus` on, clicking an unworthy target says one of 20 respectful refusals that invite them to repent (`ns.UNWORTHY_LINES`), at most once every 10 seconds. Might on a priest, mage or warlock gets 15 lines admitting it does nothing for them (`ns.MIGHT_ON_CASTER_LINES`; the classes are `ns.CASTER_CLASSES` in `Data.lua`). Lines you add with `/ezb message add` are mixed in. Edit `Lines.lua` to change the built-in ones.
 
 The line only goes out when you cast from the EzBlessings button or its key bindings (the game only lets addons send chat inside a click or key press), and only when the cast can succeed: never on yourself, and not while mounted, out of range, out of mana or on cooldown. Casts from your action bars stay silent. The game blocks addon chat during some encounters; the announce is skipped there.
 

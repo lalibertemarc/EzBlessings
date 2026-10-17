@@ -264,7 +264,8 @@ end
 -- Entry: { key, state, spellId (rank to cast), source, remaining }
 -- Result: { name, class, className, tank, grouped, hidden, unworthy, list = {entries}, done = bool,
 --           rec = entry to cast or nil, spell / greater = button cast strings for rec, refresh = bool,
---           casts = mouse button -> { id, name, key, refresh } of the spell it casts }
+--           casts = mouse button -> { id, name, key, refresh, renewOther, source } of the spell it casts:
+--           refresh = renewing your own fading blessing, renewOther = renewing source's (see refresh) }
 -- hidden = auras couldn't be read, so the result is class priority only.
 -- unworthy = why the target gets no blessing (see Unworthy); nothing is recommended.
 -- refresh = every slot is covered by other paladins, so rec recasts the most wanted of theirs.
@@ -328,12 +329,12 @@ local function Evaluate(unit)
         local greaterId = r.grouped and BestRank(blessing[r.rec.key].greater, level)
         r.greater = greaterId and CastName(greaterId)
         -- What each mouse button casts, for /ezb announce.
-        local key, renew = r.rec.key, r.rec.state == "expiring"
-        local normal = { id = r.rec.spellId, name = blessing[key].name, key = key, refresh = renew }
-        r.casts = {
-            LeftButton = normal,
-            RightButton = greaterId and { id = greaterId, name = SpellInfo(greaterId), key = key, refresh = renew } or normal,
-        }
+        local function Cast(id, name)
+            return { id = id, name = name, key = r.rec.key, refresh = r.rec.state == "expiring",
+                renewOther = r.refresh, source = r.rec.source }
+        end
+        local normal = Cast(r.rec.spellId, blessing[r.rec.key].name)
+        r.casts = { LeftButton = normal, RightButton = greaterId and Cast(greaterId, SpellInfo(greaterId)) or normal }
     end
     return r
 end
@@ -401,13 +402,16 @@ btn:SetScript("OnDragStop", function(self)
     EzBlessingsDB.pos = { point, relPoint, x, y }
 end)
 
+local current -- last Evaluate() result for the target, nil when no valid target
+
 ---------------------------------------------------------------------------
 -- Announce (/ezb announce, /ezb message)
 ---------------------------------------------------------------------------
 local ANNOUNCE_TEXT = { say = "in /say", whisper = "by whisper" }
 
--- Lines that fit this cast, from Lines.lua: the renewal ones for your own fading blessing, else the
--- general ones plus the blessing's and the target class's own. Your lines (/ezb message add) are mixed
+-- Lines that fit this cast, from Lines.lua: the renewal ones for your own fading blessing or another
+-- paladin's, the "useless" ones for Might on a caster, else the general ones plus the blessing's and the target
+-- class's own. Your lines (/ezb message add) are mixed
 -- in, or used alone with /ezb message mine.
 local function Lines(cast, class)
     local mine = EzBlessingsDB.messages
@@ -418,6 +422,10 @@ local function Lines(cast, class)
     end
     if cast.refresh then
         Add(ns.REFRESH_LINES)
+    elseif cast.renewOther then
+        Add(ns.RENEW_OTHER_LINES)
+    elseif cast.key == "MIGHT" and ns.CASTER_CLASSES[class] then
+        Add(ns.MIGHT_ON_CASTER_LINES)
     else
         Add(ns.LINES)
         Add(ns.BLESSING_LINES[cast.key])
@@ -436,11 +444,13 @@ local function PickLine(lines)
     return lines[i]
 end
 
--- The line with %t (target) and %b (blessing) filled in, cut to chat's 255-byte limit.
-local function FormatMessage(line, name, spellName)
+-- The line with %t (target), %b (blessing) and %p (paladin whose blessing you renew) filled in, cut
+-- to chat's 255-byte limit.
+local function FormatMessage(line, name, spellName, source)
     local msg = line
         :gsub("%%t", function() return name end)
         :gsub("%%b", function() return spellName end)
+        :gsub("%%p", function() return source or "another paladin" end)
     if #msg > 255 then
         msg = msg:sub(1, 255):gsub("[\192-\255][\128-\191]*$", "") -- don't leave half a UTF-8 character
     end
@@ -481,16 +491,33 @@ end
 
 -- Runs inside the click or key press, before the secure cast: addons can only send chat then.
 -- Skipped when the cast would fail anyway (range, mounted, cooldown, mana), so a spammed press says it once.
+local lastRefusal = -math.huge -- GetTime() of your last line to an unworthy target
+
+-- The line for this press, or nil to stay quiet: a blessing line when the cast can land, a refusal
+-- (ns.UNWORTHY_LINES) when the target is unworthy and nothing is cast.
+local function LineFor(cast, class)
+    if cast then
+        if IsMounted() or InRange(cast.id, "target") == false or OnCooldown(cast.id) or not Usable(cast.id) then return nil end
+        return PickLine(Lines(cast, class))
+    elseif current and current.unworthy then
+        local now = GetTime()
+        if now - lastRefusal < ns.REFUSAL_COOLDOWN then return nil end
+        lastRefusal = now
+        return PickLine(ns.UNWORTHY_LINES)
+    end
+end
+
 btn:SetScript("PreClick", function(self, button)
     local channel = EzBlessingsDB.announce
-    local cast = self.casts and self.casts[button]
-    if not (channel == "say" or channel == "whisper") or not cast or ChatLocked() then return end
+    if not (channel == "say" or channel == "whisper") or ChatLocked() then return end
     if not ValidTarget("target") or UnitIsUnit("target", "player") then return end
-    if IsMounted() or InRange(cast.id, "target") == false or OnCooldown(cast.id) or not Usable(cast.id) then return end
     local name = FullName("target")
     if not name then return end
     local _, class = UnitClass("target")
-    local msg = FormatMessage(PickLine(Lines(cast, class)), name, cast.name)
+    local cast = self.casts and self.casts[button]
+    local line = LineFor(cast, class)
+    if not line then return end
+    local msg = FormatMessage(line, name, cast and cast.name, cast and cast.source)
     Remember(msg, name, class)
     if channel == "whisper" then
         SendChat(msg, "WHISPER", name)
@@ -517,8 +544,6 @@ local function FormatTime(sec)
     return sec >= 60 and format(" (%dm)", floor(sec / 60)) or format(" (%ds)", floor(sec))
 end
 
-local current -- last Evaluate() result for the target, nil when no valid target
-
 local function ShowTooltip()
     if not current then return GameTooltip:Hide() end
     local c = RAID_CLASS_COLORS[current.class] or NORMAL_FONT_COLOR
@@ -531,6 +556,9 @@ local function ShowTooltip()
     end
     if current.unworthy then
         GameTooltip:AddLine(current.unworthy .. ": unworthy of the Light.", 1, 0.25, 0.25)
+        if EzBlessingsDB.announce then
+            GameTooltip:AddLine("Click to tell them so, " .. ANNOUNCE_TEXT[EzBlessingsDB.announce] .. ".", 0.6, 0.6, 0.6)
+        end
         GameTooltip:AddLine("Toggle with /ezb olympus", 0.6, 0.6, 0.6)
     end
     if current.hidden then
@@ -678,8 +706,8 @@ local function Example()
     local name = valid and FullName("target") or "Anduin Lothar"
     local class = valid and select(2, UnitClass("target"))
     local cast = current and current.casts and current.casts.LeftButton or { name = blessing.KINGS.name, key = "KINGS" }
-    local lines = Lines(cast, class)
-    return FormatMessage(lines[math.random(#lines)], name, cast.name)
+    local lines = (valid and current and current.unworthy) and ns.UNWORTHY_LINES or Lines(cast, class)
+    return FormatMessage(lines[math.random(#lines)], name, cast.name, cast.source)
 end
 
 -- Adds one of your own lines; returns its number, or nil when there's nothing to add.

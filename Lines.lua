@@ -134,6 +134,71 @@ ns.CLASS_LINES = {
     },
 }
 
+-- Said instead of a blessing when you click an unworthy target (/ezb olympus). Firm, never cruel:
+-- a paladin keeps a vow, not a grudge, and always leaves the way back open. %t only (nothing is
+-- cast, so no %b).
+ns.UNWORTHY_LINES = {
+    "%t, the Light forgives all who repent. Turn from Olympus, and my blessing is yours.",
+    "Repent, %t. The Light has not closed its door to you, and neither have I.",
+    "%t, I will pray for your repentance. Until then, no blessing from me.",
+    "Forgive me, %t. My oath keeps my hands still for those who stand with Olympus. Repent, and they are yours.",
+    "%t, Uther taught that no soul is beyond redemption. Not even yours. Repent, and come back to me.",
+    "Peace be with you, %t. Leave Olympus behind, and the Light will bless you through my hands.",
+    "%t, the Light shines on all, but it asks one thing of you first: repentance.",
+    "Your banner flies for Olympus, %t. Lay it down, repent, and walk with the Light.",
+    "%t, the Silver Hand keeps its vows. Make yours to the Light, repent, and I will bless you gladly.",
+    "%t, repentance is a road, not a wall. Take the first step and I will meet you there.",
+    "I bear you no ill will, %t. Repent, and my blessing will be the first you receive.",
+    "%t, the doors of Northshire Abbey are open to all who repent. Seek the Light there.",
+    "The Light remembers every deed, %t, and forgives every one that is repented.",
+    "%t, I will not raise my hand against you, nor in blessing. Repent, and go in peace.",
+    "%t, false gods offer you nothing. The Light offers forgiveness. Repent.",
+    "Walk safely, %t. Should you ever repent and leave Olympus behind, my blessings will be waiting.",
+    "%t, the Cathedral of Light hears every confession. Repent there, and return to me.",
+    "%t, it is never too late to repent. The Light is patient. So am I.",
+    "Light keep you, %t, and guide you to repentance.",
+    "%t, forgive a paladin's vows. Repent, and they will bless you instead of passing you by.",
+}
+
+-- Seconds between two refusals, so clicking an unworthy target again and again says it once.
+ns.REFUSAL_COOLDOWN = 10
+
+-- Said instead of the lines above when Might goes to a caster (ns.CASTER_CLASSES): every other
+-- blessing was taken, and you both know it does nothing for them.
+ns.MIGHT_ON_CASTER_LINES = {
+    "%t, %b. Yes, I know. You'll never swing that staff hard enough to notice.",
+    "%t, the Light ran out of better ideas. Enjoy %b, I suppose.",
+    "%t, %b for you. Utterly useless, but none go unblessed.",
+    "%t, I'm told %b does nothing for spellcasters. The Light insists anyway.",
+    "Here's %b, %t. Please don't try to melee anything because of it.",
+    "%t, %b. It won't help your spells, but it looks nice on you.",
+    "%t, every other blessing is taken. You get %b. We both know it's pointless.",
+    "%t, %b: for when you finally run out of mana and start hitting things with your staff.",
+    "%t, %b. Uther would call it a gesture. I call it the only one left.",
+    "Behold, %t: %b! About as useful as boots on a murloc.",
+    "%t, %b won't make your spells hit any harder. Sorry.",
+    "%t, take %b. Purely ceremonial.",
+    "%t, consider %b a souvenir. It does nothing else.",
+    "%t, %b. Better than nothing, but only just.",
+    "%t, %b. Don't tell the warriors I wasted it on you.",
+}
+
+-- Said instead when other paladins already cover everything the target wants and you renew one of
+-- theirs (the button's "(refresh)"). %p = that paladin's name, or "another paladin" when unknown, so
+-- don't start a line with it.
+ns.RENEW_OTHER_LINES = {
+    "%t, %p already gave you %b. Let me renew it, the Light won't mind.",
+    "%t, %b from %p is still on you. A fresh one never hurts.",
+    "%t, every blessing you need is already yours, thanks to %p. I'll renew %b anyway.",
+    "%t, you're well blessed already. Here's a fresh %b, with %p's compliments and mine.",
+    "%t, I'll top up the %b that %p gave you. The Light is never idle.",
+    "%t, nothing's missing, so I'm renewing %b. I'm sure %p won't mind sharing.",
+    "%t, %p beat me to it. Here's %b again, freshly blessed.",
+    "%t, another hour of %b. %p started it, I'm finishing it.",
+    "%t, the Light has already been generous with you. %b, renewed all the same.",
+    "%t, %p and I both think you deserve %b. Here it is again.",
+}
+
 -- Said instead when you renew your own blessing before it drops (see ns.REFRESH_THRESHOLD).
 ns.REFRESH_LINES = {
     "%t, your blessing grows faint. %b, renewed.",

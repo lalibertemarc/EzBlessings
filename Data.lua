@@ -46,6 +46,14 @@ ns.PRIORITY = {
     SHAMAN  = { "KINGS", "WISDOM", "MIGHT", "LIGHT" },
 }
 
+-- Classes Might does nothing for: when it's all that's left for them, the announce admits it
+-- (ns.MIGHT_ON_CASTER_LINES in Lines.lua).
+ns.CASTER_CLASSES = {
+    PRIEST  = true,
+    MAGE    = true,
+    WARLOCK = true,
+}
+
 -- Classes that can heal; their default priority is labeled "DPS/Healer" instead of "DPS".
 ns.HEALER_CLASSES = {
     PRIEST  = true,

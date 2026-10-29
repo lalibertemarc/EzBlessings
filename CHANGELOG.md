@@ -1,8 +1,9 @@
 # EzBlessings
 
-## Unreleased
+## v1.11.0
 
 - **The Light reaches Classic Era.** EzBlessings now loads in Classic Era too (1.15.9). There, blessings last 5 minutes, so the yellow border and renewal come with 2 minutes left; Kings is a talent, shown as "not learned" when you didn't take it; Blessing of Sanctuary is back for marked tanks (Kings > Might > Sanctuary > Light for warriors and druids, Kings > Sanctuary > Wisdom > Light > Might for paladins), with 5 announce lines of its own; and the button stays in dungeons and raids, since Era doesn't hide buffs there. Players from another realm are named "Name-Realm".
+- **Och, the Light provides.** Dwarf paladins now announce their blessings in a dwarf accent: "Here, Anduin. Blessing of Kings, straight frae the Light. No charge." Every built-in line has a dwarf version (refusals, renewals and Might-on-a-caster included), calling the target "lad" or "lass". Your own lines stay as you wrote them.
 
 ## v1.10.0
 

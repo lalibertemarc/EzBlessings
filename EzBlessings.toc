@@ -9,5 +9,6 @@
 
 Data.lua
 Lines.lua
+LinesDwarf.lua
 Core.lua
 Settings.lua

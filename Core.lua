@@ -413,6 +413,17 @@ local ANNOUNCE_TEXT = { say = "in /say", whisper = "by whisper" }
 -- paladin's, the "useless" ones for Might on a caster, else the general ones plus the blessing's and the target
 -- class's own. Your lines (/ezb message add) are mixed
 -- in, or used alone with /ezb message mine.
+-- Dwarves speak the same lines in their own accent (LinesDwarf.lua, from tools/accent.py); a table
+-- missing there, or empty, falls back to Lines.lua's.
+local function Pool(name, key)
+    local plain = ns[name]
+    if key ~= nil then plain = plain[key] end
+    local accent = select(2, UnitRace("player")) == "Dwarf" and ns.ACCENT_LINES and ns.ACCENT_LINES.dwarf
+    local lines = accent and accent[name]
+    if lines and key ~= nil then lines = lines[key] end
+    return lines and #lines > 0 and lines or plain
+end
+
 local function Lines(cast, class)
     local mine = EzBlessingsDB.messages
     if EzBlessingsDB.onlyMine and #mine > 0 then return mine end
@@ -421,15 +432,15 @@ local function Lines(cast, class)
         for _, line in ipairs(t or {}) do lines[#lines + 1] = line end
     end
     if cast.refresh then
-        Add(ns.REFRESH_LINES)
+        Add(Pool("REFRESH_LINES"))
     elseif cast.renewOther then
-        Add(ns.RENEW_OTHER_LINES)
+        Add(Pool("RENEW_OTHER_LINES"))
     elseif cast.key == "MIGHT" and ns.CASTER_CLASSES[class] then
-        Add(ns.MIGHT_ON_CASTER_LINES)
+        Add(Pool("MIGHT_ON_CASTER_LINES"))
     else
-        Add(ns.LINES)
-        Add(ns.BLESSING_LINES[cast.key])
-        Add(ns.CLASS_LINES[class])
+        Add(Pool("LINES"))
+        Add(Pool("BLESSING_LINES", cast.key))
+        Add(Pool("CLASS_LINES", class))
     end
     Add(mine)
     return lines
@@ -444,13 +455,22 @@ local function PickLine(lines)
     return lines[i]
 end
 
--- The line with %t (target), %b (blessing) and %p (paladin whose blessing you renew) filled in, cut
--- to chat's 255-byte limit.
-local function FormatMessage(line, name, spellName, source)
+local LAD = { [2] = "lad", [3] = "lass" }
+
+-- "lad" or "lass" for the unit (the dwarf lines' %l), "friend" when its sex is unknown or hidden.
+local function Lad(unit)
+    local sex = UnitSex(unit)
+    return sex and not issecret(sex) and LAD[sex] or "friend"
+end
+
+-- The line with %t (target), %b (blessing), %p (paladin whose blessing you renew) and %l (lad or
+-- lass) filled in, cut to chat's 255-byte limit.
+local function FormatMessage(line, name, spellName, source, lad)
     local msg = line
         :gsub("%%t", function() return name end)
         :gsub("%%b", function() return spellName end)
         :gsub("%%p", function() return source or "another paladin" end)
+        :gsub("%%l", function() return lad or "friend" end)
     if #msg > 255 then
         msg = msg:sub(1, 255):gsub("[\192-\255][\128-\191]*$", "") -- don't leave half a UTF-8 character
     end
@@ -503,7 +523,7 @@ local function LineFor(cast, class)
         local now = GetTime()
         if now - lastRefusal < ns.REFUSAL_COOLDOWN then return nil end
         lastRefusal = now
-        return PickLine(ns.UNWORTHY_LINES)
+        return PickLine(Pool("UNWORTHY_LINES"))
     end
 end
 
@@ -517,7 +537,7 @@ btn:SetScript("PreClick", function(self, button)
     local cast = self.casts and self.casts[button]
     local line = LineFor(cast, class)
     if not line then return end
-    local msg = FormatMessage(line, name, cast and cast.name, cast and cast.source)
+    local msg = FormatMessage(line, name, cast and cast.name, cast and cast.source, Lad("target"))
     Remember(msg, name, class)
     if channel == "whisper" then
         SendChat(msg, "WHISPER", name)
@@ -707,8 +727,8 @@ local function Example()
     local name = valid and FullName("target") or "Anduin Lothar"
     local class = valid and select(2, UnitClass("target"))
     local cast = current and current.casts and current.casts.LeftButton or { name = blessing.KINGS.name, key = "KINGS" }
-    local lines = (valid and current and current.unworthy) and ns.UNWORTHY_LINES or Lines(cast, class)
-    return FormatMessage(lines[math.random(#lines)], name, cast.name, cast.source)
+    local lines = (valid and current and current.unworthy) and Pool("UNWORTHY_LINES") or Lines(cast, class)
+    return FormatMessage(lines[math.random(#lines)], name, cast.name, cast.source, valid and Lad("target"))
 end
 
 -- Adds one of your own lines; returns its number, or nil when there's nothing to add.

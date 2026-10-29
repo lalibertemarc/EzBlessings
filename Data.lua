@@ -1,6 +1,9 @@
 -- EzBlessings data: edit priorities here.
 local _, ns = ...
 
+-- Classic Era (interface 11xxx) instead of Forever (16xxx): 5-minute blessings, Kings and Sanctuary are talents.
+ns.ERA = select(4, GetBuildInfo()) < 16000
+
 -- key -> ranks of the normal and Greater blessing as { spellId, level learned }, lowest rank first.
 ns.BLESSINGS = {
     MIGHT = {
@@ -24,6 +27,13 @@ ns.BLESSINGS = {
         greater = { { 25890, 60 } },
     },
 }
+-- Classic Era only: Sanctuary is a Protection talent there; Forever has no Sanctuary at all.
+if ns.ERA then
+    ns.BLESSINGS.SANCTUARY = {
+        ranks   = { { 20911, 30 }, { 20912, 40 }, { 20913, 50 }, { 20914, 60 } },
+        greater = { { 25899, 60 } },
+    }
+end
 
 -- A rank can't be cast on a target more than this many levels below the level it's learned at.
 ns.RANK_LEVEL_GAP = 10
@@ -68,10 +78,18 @@ ns.TANK_PRIORITY = {
     DRUID   = { "KINGS", "MIGHT", "LIGHT" },
     PALADIN = { "KINGS", "WISDOM", "LIGHT", "MIGHT" },
 }
+if ns.ERA then
+    ns.TANK_PRIORITY = {
+        WARRIOR = { "KINGS", "MIGHT", "SANCTUARY", "LIGHT" },
+        DRUID   = { "KINGS", "MIGHT", "SANCTUARY", "LIGHT" },
+        PALADIN = { "KINGS", "SANCTUARY", "WISDOM", "LIGHT", "MIGHT" },
+    }
+end
 
 -- Case-insensitive parts of guild names whose members get no blessing while /ezb olympus is on.
 -- Only used without OlympusMute; with it installed, its own lists are used instead.
 ns.UNWORTHY_GUILDS = { "olympus" }
 
--- Seconds left on your own blessing before suggesting a refresh.
-ns.REFRESH_THRESHOLD = 1200
+-- Seconds left on your own blessing before suggesting a refresh. Classic Era's blessings last
+-- 5 minutes (Greater 15), so there it's only near the end.
+ns.REFRESH_THRESHOLD = ns.ERA and 120 or 1200

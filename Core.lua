@@ -167,12 +167,12 @@ local function UnitKey(unit)
     return name and name:lower()
 end
 
--- "First Surname"; Forever's UnitName returns the surname where retail returns the realm.
+-- "First Surname"; Forever's UnitName returns the surname where Classic Era returns the realm ("Name-Realm").
 -- Whispers need the full name.
 local function FullName(unit)
     local name, surname = UnitName(unit)
     if not name or issecret(name) then return nil end
-    if surname and not issecret(surname) and surname ~= "" then return name .. " " .. surname end
+    if surname and not issecret(surname) and surname ~= "" then return name .. (ns.ERA and "-" or " ") .. surname end
     return name
 end
 
@@ -594,8 +594,9 @@ btn:SetScript("OnLeave", function(self) self.hover = false; GameTooltip:Hide() e
 -- Update
 ---------------------------------------------------------------------------
 -- Forever hides buffs for the whole of a dungeon or raid, so the button can't tell anything useful there.
+-- Classic Era shows them, so the button stays.
 local function InHiddenInstance()
-    if not EzBlessingsDB.hideInInstances then return false end
+    if ns.ERA or not EzBlessingsDB.hideInInstances then return false end
     local _, kind = IsInInstance()
     return kind == "party" or kind == "raid"
 end
@@ -691,7 +692,7 @@ local HELP = {
     "/ezb tanks - list tanks",
     "/ezb lock | unlock - lock button position (shift-drag always moves)",
     "/ezb reset - reset button position",
-    "/ezb instances - toggle hiding the button in dungeons and raids",
+    "/ezb instances - toggle hiding the button in dungeons and raids (Forever only)",
     "/ezb olympus - toggle skipping Olympus guilds (and your OlympusMute list)",
     "/ezb announce off | say | whisper - say or whisper a line to the target when you bless them",
     "/ezb message - list your own lines (mixed in with the built-in ones)",
@@ -779,6 +780,7 @@ local COMMANDS = {
     unlock = function() EzBlessingsDB.locked = false; Print("Unlocked.") end,
     reset  = function() ns.ResetPosition() end,
     instances = function()
+        if ns.ERA then return Print("Classic Era doesn't hide buffs in dungeons and raids, so the button stays.") end
         EzBlessingsDB.hideInInstances = not EzBlessingsDB.hideInInstances
         Print(EzBlessingsDB.hideInInstances and "Hidden in dungeons and raids." or "Shown in dungeons and raids.")
     end,

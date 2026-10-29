@@ -212,11 +212,15 @@ function ns.BuildSettings()
         function(on) EzBlessingsDB.locked = on end)
     lock:SetPoint("TOPLEFT", buttonHeader, "BOTTOMLEFT", -4, -6)
 
-    local instances = Check("Hide in dungeons and raids",
-        "The game hides buffs from addons there, so the button can't tell what's missing.",
-        function() return EzBlessingsDB.hideInInstances end,
-        function(on) EzBlessingsDB.hideInInstances = on end)
-    instances:SetPoint("TOPLEFT", lock, "BOTTOMLEFT", 0, -2)
+    -- Only Forever hides buffs in instances; Classic Era gets no checkbox.
+    local instances = lock
+    if not ns.ERA then
+        instances = Check("Hide in dungeons and raids",
+            "The game hides buffs from addons there, so the button can't tell what's missing.",
+            function() return EzBlessingsDB.hideInInstances end,
+            function(on) EzBlessingsDB.hideInInstances = on end)
+        instances:SetPoint("TOPLEFT", lock, "BOTTOMLEFT", 0, -2)
+    end
 
     local olympus = Check("Withhold blessings from the unworthy",
         "Players whose guild name contains \"Olympus\" get nothing. With OlympusMute installed, its lists are used.",

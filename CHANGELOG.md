@@ -1,5 +1,9 @@
 # EzBlessings
 
+## Unreleased
+
+- **The Light reaches Classic Era.** EzBlessings now loads in Classic Era too (1.15.9). There, blessings last 5 minutes, so the yellow border and renewal come with 2 minutes left; Kings is a talent, shown as "not learned" when you didn't take it; Blessing of Sanctuary is back for marked tanks (Kings > Might > Sanctuary > Light for warriors and druids, Kings > Sanctuary > Wisdom > Light > Might for paladins), with 5 announce lines of its own; and the button stays in dungeons and raids, since Era doesn't hide buffs there. Players from another realm are named "Name-Realm".
+
 ## v1.10.0
 
 - **A vow, not a grudge.** With `/ezb olympus` on and announcing turned on, clicking an unworthy target no longer does nothing in silence: you tell them, in /say or by whisper, why no blessing comes, and how to earn it back. One of 20 lines, firm but never cruel, each leaving the way open: "Repent. The Light has not closed its door to you, and neither have I." At most one refusal every 10 seconds, however often you click.

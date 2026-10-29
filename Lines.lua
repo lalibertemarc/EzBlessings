@@ -76,6 +76,13 @@ ns.BLESSING_LINES = {
         "%t, take %b and let the tank do their job.",
         "%t, %b is yours. The monsters will forget you were here.",
     },
+    SANCTUARY = { -- Classic Era only
+        "%t, %b. Let them strike, and let them regret it.",
+        "Hold the line, %t. %b will blunt every blow.",
+        "%t, may %b make you a wall the Scourge can't break.",
+        "%t, take %b. Every hit they land costs them.",
+        "%t, %b is yours. Stand firm, the Light stands with you.",
+    },
     LIGHT = {
         "%t, may %b make every heal shine brighter.",
         "%t, %b. Let the Light mend you faster.",
@@ -194,7 +201,7 @@ ns.RENEW_OTHER_LINES = {
     "%t, I'll top up the %b that %p gave you. The Light is never idle.",
     "%t, nothing's missing, so I'm renewing %b. I'm sure %p won't mind sharing.",
     "%t, %p beat me to it. Here's %b again, freshly blessed.",
-    "%t, another hour of %b. %p started it, I'm finishing it.",
+    "%t, another " .. (ns.ERA and "round" or "hour") .. " of %b. %p started it, I'm finishing it.",
     "%t, the Light has already been generous with you. %b, renewed all the same.",
     "%t, %p and I both think you deserve %b. Here it is again.",
 }
@@ -206,7 +213,7 @@ ns.REFRESH_LINES = {
     "%t, time to renew %b.",
     "%t, %b was fading. Not on my watch.",
     "%t, let me top up %b.",
-    "Another hour of %b for you, %t.",
+    "Another " .. (ns.ERA and "round" or "hour") .. " of %b for you, %t.",
     "%t, the Light renews what time wears down. %b.",
     "%t, one more %b for the road.",
     "%t, %b again. The Light keeps its promises.",

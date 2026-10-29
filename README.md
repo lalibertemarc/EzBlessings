@@ -2,7 +2,7 @@
 
 *None go unblessed.*
 
-A WoW Forever addon for paladins. Target a friendly player and EzBlessings shows the blessing that player needs, picked by their class and role. Click the icon to cast it.
+A WoW Forever and Classic Era addon for paladins. Target a friendly player and EzBlessings shows the blessing that player needs, picked by their class and role. Click the icon to cast it.
 
 ## The Three Virtues
 
@@ -21,7 +21,7 @@ The paladin is the hand that always gives. Almost always: see `/ezb olympus`.
 - **Tank mode**: mark tanks with `/ezb tank <name>` and they get Kings/Might priority, never Salvation.
 - **Right rank for low levels**: casts the highest rank the target's level allows, so low-level players don't get "target too low" errors. The tooltip shows which rank will be cast.
 - **Aware of other paladins**: blessings another paladin already cast are skipped, so you suggest the next one down. If they've covered everything, the button offers to refresh the top-priority one.
-- **Refresh warnings**: the border turns yellow when your blessing on the target has under 20 minutes left.
+- **Refresh warnings**: the border turns yellow when your blessing on the target has under 20 minutes left (2 minutes in Classic Era, where blessings last 5).
 - **Range warning**: the icon turns red when the target is out of range of the blessing.
 - **Announce your blessings** (optional): say a line in /say or whisper it to the target when you cast, picked at random from about 100 built-in lines plus your own.
 - **Full breakdown on hover**: the tooltip lists the target's whole priority, who cast what, and time left.
@@ -76,8 +76,14 @@ Use `/ezb` or `/ezblessings`. `/ezb` alone opens the options page; `/ezb help` l
 | Paladin, Shaman | Kings > Wisdom > Might > Light |
 | Warrior, Druid (tank) | Kings > Might > Light |
 | Paladin (tank) | Kings > Wisdom > Light > Might |
+| Warrior, Druid (tank), Classic Era | Kings > Might > Sanctuary > Light |
+| Paladin (tank), Classic Era | Kings > Sanctuary > Wisdom > Light > Might |
 
 To change them, edit `Data.lua`.
+
+## Classic Era
+
+The same addon loads in Classic Era (1.15.9). There, Kings and Sanctuary are Protection talents: if you didn't take them, they show as "not learned" and the next blessing in line is suggested. Blessing of Sanctuary exists only there, for tanks. Buffs aren't hidden in dungeons and raids, so the button always shows there (no "Hide in dungeons and raids" option), and players from another realm are named "Name-Realm".
 
 ## Announcing
 
@@ -105,7 +111,7 @@ Releases are built by the [BigWigs packager](https://github.com/BigWigsMods/pack
    git push origin v1.0.0
    ```
 
-The packager fills in `## Version` from the tag and reads `## Interface: 16001` as the Forever game version.
+The packager fills in `## Version` from the tag and reads `## Interface: 16001, 11509` as the Forever and Classic Era game versions.
 
 ## License
 

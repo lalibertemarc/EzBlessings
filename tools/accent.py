@@ -1,8 +1,8 @@
 """Translates every EzBlessings line (Lines.lua) into a dwarf accent (or orc/troll) with the local LLM
 (Ollama), and writes Lines<Accent>.lua: the same tables, under ns.ACCENT_LINES[accent].
 
-Borrows RpBuffBeg's tools (../RpBuffBeg/tools/generate.py): its Ollama call, accent descriptions and
-plain -> accent example pairs (matching lines in RpBuffBeg's Voices.lua / Voices<Accent>.lua).
+Borrows Buff Me Please's tools (../BuffMePlease/tools/generate.py): its Ollama call, accent descriptions and
+plain -> accent example pairs (matching lines in Buff Me Please's Voices.lua / Voices<Accent>.lua).
 
 Needs Ollama running (https://ollama.com) with the model pulled:  ollama pull llama3.1:8b
 
@@ -25,12 +25,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "Lines.lua"
-RPBUFFBEG_TOOLS = ROOT.parent / "RpBuffBeg" / "tools"
-sys.path.insert(0, str(RPBUFFBEG_TOOLS))
+BUFFMEPLEASE_TOOLS = ROOT.parent / "BuffMePlease" / "tools"
+sys.path.insert(0, str(BUFFMEPLEASE_TOOLS))
 try:
     import generate as g
 except ImportError:
-    sys.exit(f"Needs RpBuffBeg's tools next to this addon: {RPBUFFBEG_TOOLS / 'generate.py'} not found.")
+    sys.exit(f"Needs Buff Me Please's tools next to this addon: {BUFFMEPLEASE_TOOLS / 'generate.py'} not found.")
 
 ACCENTS = [a for a in g.SOURCES if a != "plain"]
 BATCH = 10
@@ -142,7 +142,7 @@ def parse_lines(path):
 
 
 def examples(pairs):
-    """RpBuffBeg's plain -> accent pairs, with its placeholders swapped for ours."""
+    """Buff Me Please's plain -> accent pairs, with its placeholders swapped for ours."""
     def fix(s):
         return s.replace("{buff}", "{blessing}").replace("{me}", "me").replace("{my}", "my")
     shown = random.sample(pairs, min(PAIRS, len(pairs)))

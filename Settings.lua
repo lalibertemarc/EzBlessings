@@ -72,27 +72,32 @@ function ns.BuildSettings()
         .. "Each time, one line is picked at random from the built-in ones and yours.", LIST_WIDTH + 30)
     announceHelp:SetPoint("TOPLEFT", announceHeader, "BOTTOMLEFT", 0, -6)
 
-    local radios = {}
-    for i, choice in ipairs(ANNOUNCE_CHOICES) do
-        local radio = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-        radio:SetSize(26, 26)
-        radio.Text:SetFontObject(GameFontHighlight)
-        radio.Text:SetText(choice.label)
-        if i == 1 then
-            radio:SetPoint("TOPLEFT", announceHelp, "BOTTOMLEFT", -4, -8)
-        else
-            radio:SetPoint("LEFT", radios[i - 1].Text, "RIGHT", 24, 0)
+    -- A row of check buttons of which one is on (choices: { value, label }); the caller places the first.
+    local function Radios(choices, get, set)
+        local radios = {}
+        for i, choice in ipairs(choices) do
+            local radio = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+            radio:SetSize(26, 26)
+            radio.Text:SetFontObject(GameFontHighlight)
+            radio.Text:SetText(choice.label)
+            if i > 1 then radio:SetPoint("LEFT", radios[i - 1].Text, "RIGHT", 24, 0) end
+            radio:SetScript("OnClick", function()
+                set(choice.value)
+                for j, r in ipairs(radios) do r:SetChecked(choices[j].value == choice.value) end
+                ns.Update()
+            end)
+            radios[i] = radio
         end
-        radio:SetScript("OnClick", function()
-            EzBlessingsDB.announce = choice.value
-            for j, r in ipairs(radios) do r:SetChecked(ANNOUNCE_CHOICES[j].value == choice.value) end
-            ns.Update()
-        end)
-        radios[i] = radio
+        refreshers[#refreshers + 1] = function()
+            for j, r in ipairs(radios) do r:SetChecked(choices[j].value == get()) end
+        end
+        return radios
     end
-    refreshers[#refreshers + 1] = function()
-        for j, r in ipairs(radios) do r:SetChecked(ANNOUNCE_CHOICES[j].value == EzBlessingsDB.announce) end
-    end
+
+    local radios = Radios(ANNOUNCE_CHOICES,
+        function() return EzBlessingsDB.announce end,
+        function(value) EzBlessingsDB.announce = value end)
+    radios[1]:SetPoint("TOPLEFT", announceHelp, "BOTTOMLEFT", -4, -8)
 
     local onlyMine = Check("Use only my lines",
         "Leave out the built-in lines. While you have no lines of your own, the built-in ones are still used.",
@@ -100,9 +105,28 @@ function ns.BuildSettings()
         function(on) EzBlessingsDB.onlyMine = on or nil end)
     onlyMine:SetPoint("TOPLEFT", radios[1], "BOTTOMLEFT", 0, -2)
 
+    -- Undead accent for every line, this character only. Dwarves have their own lines instead: no row.
+    local above, x, y = onlyMine, 4, -12
+    if not ns.DWARF then
+        local accentLabel = Label("GameFontNormal", "Accent")
+        accentLabel:SetPoint("TOPLEFT", onlyMine, "BOTTOMLEFT", 4, -10)
+        local choices = {}
+        for i, key in ipairs(ns.ACCENT_ORDER) do
+            local label = ns.ACCENTS[key]
+            choices[i] = { value = key, label = label:sub(1, 1):upper() .. label:sub(2) }
+        end
+        local accents = Radios(choices,
+            function() return EzBlessingsCharDB.accent end,
+            function(value) EzBlessingsCharDB.accent = value end)
+        accents[1]:SetPoint("LEFT", accentLabel, "RIGHT", 8, 0)
+        local accentHelp = Label("GameFontDisableSmall", "undead, this character; try a line below")
+        accentHelp:SetPoint("LEFT", accents[#accents].Text, "RIGHT", 16, 0)
+        above, x, y = accentLabel, 0, -16 -- clear of the radios, which stand taller than the label
+    end
+
     -- Your lines -------------------------------------------------------------
     local linesLabel = Label("GameFontNormal", "Your lines")
-    linesLabel:SetPoint("TOPLEFT", onlyMine, "BOTTOMLEFT", 4, -12)
+    linesLabel:SetPoint("TOPLEFT", above, "BOTTOMLEFT", x, y)
     local tokens = Label("GameFontDisableSmall", "%t = your target's full name, %b = the blessing you cast")
     tokens:SetPoint("LEFT", linesLabel, "RIGHT", 10, 0)
 

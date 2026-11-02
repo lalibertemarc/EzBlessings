@@ -4,6 +4,7 @@ self = false
 
 globals = {
     "EzBlessingsDB",
+    "EzBlessingsCharDB",
     "SLASH_EZBLESSINGS1",
     "SLASH_EZBLESSINGS2",
     "SlashCmdList",
@@ -25,5 +26,5 @@ read_globals = {
     "UnitGUID", "GetUnitName", "GetNormalizedRealmName", "GetRealmName",
     "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown", "IsMounted", "IsInInstance",
     -- Other addons (optional)
-    "OlympusMuteDB",
+    "OlympusMuteDB", "EzAccentAPI",
 }

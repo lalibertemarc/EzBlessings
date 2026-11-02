@@ -93,3 +93,10 @@ ns.UNWORTHY_GUILDS = { "olympus" }
 -- Seconds left on your own blessing before suggesting a refresh. Classic Era's blessings last
 -- 5 minutes (Greater 15), so there it's only near the end.
 ns.REFRESH_THRESHOLD = ns.ERA and 120 or 1200
+
+-- Undead accents your announce lines can be spoken in (/ezb accent, per character), respelled live by Accent.lua:
+-- key -> name shown. %t, %b, %p and %l are filled in after, so names are never respelled. Dwarves keep their own
+-- accent (LinesDwarf.lua) and get none of these.
+ns.ACCENTS = { none = "no accent", locked = "locked jaw", jawless = "jawless" }
+ns.ACCENT_ORDER = { "none", "locked", "jawless" }
+ns.ACCENT_SAMPLE = "%t, may the Light guide you. I grant you %b, by the grace of the Light."

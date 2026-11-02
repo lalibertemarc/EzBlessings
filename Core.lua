@@ -415,10 +415,13 @@ local ANNOUNCE_TEXT = { say = "in /say", whisper = "by whisper" }
 -- in, or used alone with /ezb message mine.
 -- Dwarves speak the same lines in their own accent (LinesDwarf.lua, from tools/accent.py); a table
 -- missing there, or empty, falls back to Lines.lua's.
+local DWARF = select(2, UnitRace("player")) == "Dwarf"
+ns.DWARF = DWARF
+
 local function Pool(name, key)
     local plain = ns[name]
     if key ~= nil then plain = plain[key] end
-    local accent = select(2, UnitRace("player")) == "Dwarf" and ns.ACCENT_LINES and ns.ACCENT_LINES.dwarf
+    local accent = DWARF and ns.ACCENT_LINES and ns.ACCENT_LINES.dwarf
     local lines = accent and accent[name]
     if lines and key ~= nil then lines = lines[key] end
     return lines and #lines > 0 and lines or plain
@@ -463,16 +466,39 @@ local function Lad(unit)
     return sex and not issecret(sex) and LAD[sex] or "friend"
 end
 
+-- The game refuses chat messages past 255 bytes.
+local MAX_MESSAGE = 255
+
+-- Your undead accent (EzBlessingsCharDB.accent): "locked" or "jawless", nil for none. Dwarves already have
+-- theirs (LinesDwarf.lua) and never get one.
+local function Accent()
+    local accent = not DWARF and EzBlessingsCharDB and EzBlessingsCharDB.accent
+    return accent and accent ~= "none" and ns.ACCENTS[accent] and accent or nil
+end
+
 -- The line with %t (target), %b (blessing), %p (paladin whose blessing you renew) and %l (lad or
--- lass) filled in, cut to chat's 255-byte limit.
-local function FormatMessage(line, name, spellName, source, lad)
-    local msg = line
+-- lass) filled in.
+local function Fill(line, name, spellName, source, lad)
+    return (line
         :gsub("%%t", function() return name end)
         :gsub("%%b", function() return spellName end)
         :gsub("%%p", function() return source or "another paladin" end)
-        :gsub("%%l", function() return lad or "friend" end)
-    if #msg > 255 then
-        msg = msg:sub(1, 255):gsub("[\192-\255][\128-\191]*$", "") -- don't leave half a UTF-8 character
+        :gsub("%%l", function() return lad or "friend" end))
+end
+
+-- The line as it goes out: in your accent (Accent.lua), cut to chat's 255-byte limit. The accent works on the line
+-- before Fill, so names and the blessing are never respelled (your chat links the target's name), and it's left
+-- plain when the accent would run past the limit.
+local function FormatMessage(line, name, spellName, source, lad)
+    local msg = Fill(line, name, spellName, source, lad)
+    local accent = Accent()
+    if accent then
+        local max = MAX_MESSAGE - (#msg - #line)
+        local text = ns.Speak(accent, line, max)
+        if #text <= max then msg = Fill(text, name, spellName, source, lad) end
+    end
+    if #msg > MAX_MESSAGE then
+        msg = msg:sub(1, MAX_MESSAGE):gsub("[\192-\255][\128-\191]*$", "") -- don't leave half a UTF-8 character
     end
     return msg
 end
@@ -719,6 +745,7 @@ local HELP = {
     "/ezb message add <text> | remove <n> | clear - edit them; %t = target, %b = blessing",
     "/ezb message mine - toggle using only your lines",
     "/ezb message test - show a line as it could go out now",
+    "/ezb accent [none|locked|jawless] - show or set your undead accent (locked jaw, jawless) for this character",
 }
 
 -- A line as it could go out on your target (or a stand-in) now. Doesn't count as said.
@@ -751,6 +778,33 @@ ns.Example = Example
 
 local function AnnounceHint()
     if not EzBlessingsDB.announce then Print("Lines go out once you turn on /ezb announce say | whisper") end
+end
+
+-- Shows your accent, or sets it (arg: a key of ns.ACCENTS or its name, "locked jaw"), with a sample said only to you.
+local function SetAccent(arg)
+    if DWARF then return Print("Dwarves already speak in their own accent.") end
+    arg = arg:lower()
+    if arg ~= "" then
+        local key = ns.ACCENTS[arg] and arg
+        for k, label in pairs(ns.ACCENTS) do
+            if label == arg then key = k end
+        end
+        if not key then return Print("Accents: " .. table.concat(ns.ACCENT_ORDER, ", ") .. ".") end
+        EzBlessingsCharDB.accent = key
+    end
+    local accent = EzBlessingsCharDB.accent
+    Print("Accent: " .. ns.ACCENTS[accent] .. (arg == "" and " (/ezb accent " .. table.concat(ns.ACCENT_ORDER, "|") .. ")" or "."))
+    if accent ~= "none" then
+        Print("Sample: " .. FormatMessage(ns.ACCENT_SAMPLE, "Anduin Lothar", blessing.KINGS.name))
+    end
+end
+
+-- EzAccent's accent changed (EzAccentAPI): undead is the locked jaw, or jawless when thick; any other accent is none.
+local function FromEzAccent(accent, thick)
+    local key = accent == "undead" and (thick and "jawless" or "locked") or "none"
+    if EzBlessingsCharDB.accent == key then return end
+    EzBlessingsCharDB.accent = key
+    return "EzBlessings to " .. ns.ACCENTS[key]
 end
 
 -- /ezb message subcommands.
@@ -826,6 +880,7 @@ local COMMANDS = {
         if fn then return fn(rest) end
         Print("/ezb message [add <text> | remove <n> | clear | mine | test]")
     end,
+    accent = SetAccent,
 }
 
 SLASH_EZBLESSINGS1 = "/ezb"
@@ -863,6 +918,9 @@ ev:SetScript("OnEvent", function(self, event, unit)
         end
         if EzBlessingsDB.locked == nil then EzBlessingsDB.locked = true end
         if EzBlessingsDB.hideInInstances == nil then EzBlessingsDB.hideInInstances = true end
+        EzBlessingsCharDB = EzBlessingsCharDB or {}
+        if not ns.ACCENTS[EzBlessingsCharDB.accent] then EzBlessingsCharDB.accent = "none" end
+        if EzAccentAPI and not DWARF then EzAccentAPI.OnAccentChanged(FromEzAccent) end
         -- Older versions could save the default anchor without TargetFrame, putting the button off-screen.
         local p = EzBlessingsDB.pos
         if p and p[1] == "LEFT" and p[2] == "RIGHT" and p[3] == -10 and p[4] == 10 then EzBlessingsDB.pos = nil end

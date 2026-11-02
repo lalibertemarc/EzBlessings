@@ -1,5 +1,9 @@
 # EzBlessings
 
+## Unreleased
+
+- **The Light, through clenched teeth.** Forsaken paladins can announce their blessings in an undead accent: `/ezb accent locked` (or `jawless`, or the Accent row on the options page) respells every line live as it goes out, a little different each time. Locked jaw squeezes its vowels and strains at the end: "Huld fesst, Anduin Lothar. Blessing of Kings will see yuu thruugh. Nnn." Jawless slurs and gurgles: "Anduin Lothar, I hhrayed hhor you. Hhk. Hhe Light ansh'ered: Blessing of Kings. Hhkk." Names and the blessing are never respelled, so the target's link still works, and your own lines get the accent too. A line the accent would push past 255 characters goes out plain. Per character, off by default, takes effect right away; `/ezb accent` shows the current one with a sample, `/ezb accent none` turns it off. With [EzAccent](../EzAccent), changing its accent sets this one too (undead is locked jaw, thick undead is jawless, anything else is none). Dwarves keep their dwarf lines and get no undead accent. The rules are EzAccent's.
+
 ## v1.11.0
 
 - **The Light reaches Classic Era.** EzBlessings now loads in Classic Era too (1.15.9). There, blessings last 5 minutes, so the yellow border and renewal come with 2 minutes left; Kings is a talent, shown as "not learned" when you didn't take it; Blessing of Sanctuary is back for marked tanks (Kings > Might > Sanctuary > Light for warriors and druids, Kings > Sanctuary > Wisdom > Light > Might for paladins), with 5 announce lines of its own; and the button stays in dungeons and raids, since Era doesn't hide buffs there. Players from another realm are named "Name-Realm".

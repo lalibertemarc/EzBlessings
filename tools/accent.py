@@ -1,8 +1,8 @@
 """Translates every EzBlessings line (Lines.lua) into a dwarf accent (or orc/troll) with the local LLM
 (Ollama), and writes Lines<Accent>.lua: the same tables, under ns.ACCENT_LINES[accent].
 
-Borrows Buff Me Please's tools (../BuffMePlease/tools/generate.py): its Ollama call, accent descriptions and
-plain -> accent example pairs (matching lines in Buff Me Please's Voices.lua / Voices<Accent>.lua).
+Borrows Buff Me Please's tools (../BuffMePlease/tools/examples.py): its Ollama call, accent descriptions and
+plain -> accent example pairs (its hand-written lines, kept in its tools/examples/).
 
 Needs Ollama running (https://ollama.com) with the model pulled:  ollama pull llama3.1:8b
 
@@ -28,9 +28,9 @@ SOURCE = ROOT / "Lines.lua"
 BUFFMEPLEASE_TOOLS = ROOT.parent / "BuffMePlease" / "tools"
 sys.path.insert(0, str(BUFFMEPLEASE_TOOLS))
 try:
-    import generate as g
+    import examples as g
 except ImportError:
-    sys.exit(f"Needs Buff Me Please's tools next to this addon: {BUFFMEPLEASE_TOOLS / 'generate.py'} not found.")
+    sys.exit(f"Needs Buff Me Please's tools next to this addon: {BUFFMEPLEASE_TOOLS / 'examples.py'} not found.")
 
 ACCENTS = [a for a in g.SOURCES if a != "plain"]
 BATCH = 10

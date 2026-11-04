@@ -1,5 +1,12 @@
 # EzBlessings
 
+## v1.13.0
+
+- **Every accent, light or thick.** Announce lines can now be said in a dwarf, orc, troll or undead accent, on any paladin: `/ezb accent dwarf` (or `orc`, `troll`, `undead`, `none`, or the Accent row on the options page). `/ezb thick` (or the new Thick accent checkbox) makes it heavier: "Och! Anduin Lothar, may the Licht guide ye. Ah grant ye Blessing of Kings, lad." For the undead, thick is the jawless voice; `/ezb accent locked` and `jawless` still work. The default is By race: dwarves speak dwarf, everyone else plainly. Every line, your own included, is respelled live as it goes out, a little different each time, and a woman hears "lass" instead of "lad". Per character, takes effect on the next line.
+- Dwarf lines are now spoken live by the same accent engine instead of a fixed set of translated lines, so they vary each time and your own lines get the accent too.
+- With EzAccent, changing its accent now sets the same accent and thickness here (it used to set only the undead one).
+- Your 1.12 choice carries over: locked jaw becomes Undead, jawless becomes Undead with Thick accent on.
+
 ## v1.12.0
 
 - **The Light, through clenched teeth.** Forsaken paladins can announce their blessings in an undead accent: `/ezb accent locked` (or `jawless`, or the Accent row on the options page) respells every line live as it goes out, a little different each time. Locked jaw squeezes its vowels and strains at the end: "Huld fesst, Anduin Lothar. Blessing of Kings will see yuu thruugh. Nnn." Jawless slurs and gurgles: "Anduin Lothar, I hhrayed hhor you. Hhk. Hhe Light ansh'ered: Blessing of Kings. Hhkk." Names and the blessing are never respelled, so the target's link still works, and your own lines get the accent too. A line the accent would push past 255 characters goes out plain. Per character, off by default, takes effect right away; `/ezb accent` shows the current one with a sample, `/ezb accent none` turns it off. With EzAccent, changing its accent sets this one too (undead is locked jaw, thick undead is jawless, anything else is none). Dwarves keep their dwarf lines and get no undead accent. The rules are EzAccent's.

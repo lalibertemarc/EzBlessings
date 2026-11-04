@@ -413,18 +413,10 @@ local ANNOUNCE_TEXT = { say = "in /say", whisper = "by whisper" }
 -- paladin's, the "useless" ones for Might on a caster, else the general ones plus the blessing's and the target
 -- class's own. Your lines (/ezb message add) are mixed
 -- in, or used alone with /ezb message mine.
--- Dwarves speak the same lines in their own accent (LinesDwarf.lua, from tools/accent.py); a table
--- missing there, or empty, falls back to Lines.lua's.
-local DWARF = select(2, UnitRace("player")) == "Dwarf"
-ns.DWARF = DWARF
-
 local function Pool(name, key)
-    local plain = ns[name]
-    if key ~= nil then plain = plain[key] end
-    local accent = DWARF and ns.ACCENT_LINES and ns.ACCENT_LINES.dwarf
-    local lines = accent and accent[name]
-    if lines and key ~= nil then lines = lines[key] end
-    return lines and #lines > 0 and lines or plain
+    local lines = ns[name]
+    if key ~= nil then lines = lines[key] end
+    return lines
 end
 
 local function Lines(cast, class)
@@ -458,44 +450,80 @@ local function PickLine(lines)
     return lines[i]
 end
 
-local LAD = { [2] = "lad", [3] = "lass" }
-
--- "lad" or "lass" for the unit (the dwarf lines' %l), "friend" when its sex is unknown or hidden.
-local function Lad(unit)
+-- True when the unit is a woman (false when its sex is unknown or hidden): she hears "lass", not "lad".
+local function Female(unit)
     local sex = UnitSex(unit)
-    return sex and not issecret(sex) and LAD[sex] or "friend"
+    return sex ~= nil and not issecret(sex) and sex == 3
 end
 
 -- The game refuses chat messages past 255 bytes.
 local MAX_MESSAGE = 255
 
--- Your undead accent (EzBlessingsCharDB.accent): "locked" or "jawless", nil for none. Dwarves already have
--- theirs (LinesDwarf.lua) and never get one.
-local function Accent()
-    local accent = not DWARF and EzBlessingsCharDB and EzBlessingsCharDB.accent
-    return accent and accent ~= "none" and ns.ACCENTS[accent] and accent or nil
+-- This character's accent choice (ns.ACCENT), "race" included.
+local function AccentKey()
+    local a = EzBlessingsCharDB and EzBlessingsCharDB.accent
+    return ns.ACCENT[a] and a or ns.DEFAULT_ACCENT
+end
+ns.AccentKey = AccentKey
+
+-- The accent that choice speaks in, nil for plain.
+local function ChosenAccent()
+    local a = AccentKey()
+    if a == "race" then return ns.RACE_ACCENT[select(2, UnitRace("player"))] end
+    if a ~= "none" then return a end
 end
 
--- The line with %t (target), %b (blessing), %p (paladin whose blessing you renew) and %l (lad or
--- lass) filled in.
-local function Fill(line, name, spellName, source, lad)
+-- A thicker accent (EzBlessingsCharDB.thick): heavier dialect, and for the undead no jaw at all.
+local function Thick()
+    return EzBlessingsCharDB and EzBlessingsCharDB.thick or false
+end
+
+-- "Orc", "Dwarf (thick)", "Undead (jawless)", nil for plain.
+local function AccentLabel()
+    local a = ChosenAccent()
+    if not a then return end
+    return ns.ACCENT[a].label .. (Thick() and (a == "undead" and " (jawless)" or " (thick)") or "")
+end
+
+-- A woman hears the accent's "lad" and "bruddah" as "lass" and "sistah" (ns.TO_HER), only where the accent put
+-- them in: words the plain line already has are left alone.
+local function HasWord(s, w)
+    return s:lower():find("%f[%a]" .. w .. "%f[%A]") ~= nil
+end
+
+local function Cap(s) return s:sub(1, 1):upper() .. s:sub(2) end
+
+local function ToHer(said, text)
+    for _, w in ipairs(ns.TO_HER) do
+        local typed = false
+        for _, t in ipairs(w.typed) do typed = typed or HasWord(text, t) end
+        if not typed then
+            if HasWord(said, w.she) then said = said:gsub(", " .. w.he .. "%f[%A]", "") end
+            said = said:gsub("%f[%a]" .. w.he .. "%f[%A]", w.she):gsub("%f[%a]" .. Cap(w.he) .. "%f[%A]", Cap(w.she))
+        end
+    end
+    return said
+end
+
+-- The line with %t (target), %b (blessing) and %p (paladin whose blessing you renew) filled in.
+local function Fill(line, name, spellName, source)
     return (line
         :gsub("%%t", function() return name end)
         :gsub("%%b", function() return spellName end)
-        :gsub("%%p", function() return source or "another paladin" end)
-        :gsub("%%l", function() return lad or "friend" end))
+        :gsub("%%p", function() return source or "another paladin" end))
 end
 
 -- The line as it goes out: in your accent (Accent.lua), cut to chat's 255-byte limit. The accent works on the line
 -- before Fill, so names and the blessing are never respelled (your chat links the target's name), and it's left
--- plain when the accent would run past the limit.
-local function FormatMessage(line, name, spellName, source, lad)
-    local msg = Fill(line, name, spellName, source, lad)
-    local accent = Accent()
+-- plain when the accent would run past the limit. female: the target is a woman ("lass").
+local function FormatMessage(line, name, spellName, source, female)
+    local msg = Fill(line, name, spellName, source)
+    local accent = ChosenAccent()
     if accent then
         local max = MAX_MESSAGE - (#msg - #line)
-        local text = ns.Speak(accent, line, max)
-        if #text <= max then msg = Fill(text, name, spellName, source, lad) end
+        local text = ns.Speak(accent, line, Thick(), max)
+        if female then text = ToHer(text, line) end
+        if #text <= max then msg = Fill(text, name, spellName, source) end
     end
     if #msg > MAX_MESSAGE then
         msg = msg:sub(1, MAX_MESSAGE):gsub("[\192-\255][\128-\191]*$", "") -- don't leave half a UTF-8 character
@@ -563,7 +591,7 @@ btn:SetScript("PreClick", function(self, button)
     local cast = self.casts and self.casts[button]
     local line = LineFor(cast, class)
     if not line then return end
-    local msg = FormatMessage(line, name, cast and cast.name, cast and cast.source, Lad("target"))
+    local msg = FormatMessage(line, name, cast and cast.name, cast and cast.source, Female("target"))
     Remember(msg, name, class)
     if channel == "whisper" then
         SendChat(msg, "WHISPER", name)
@@ -745,7 +773,8 @@ local HELP = {
     "/ezb message add <text> | remove <n> | clear - edit them; %t = target, %b = blessing",
     "/ezb message mine - toggle using only your lines",
     "/ezb message test - show a line as it could go out now",
-    "/ezb accent [none|locked|jawless] - show or set your undead accent (locked jaw, jawless) for this character",
+    "/ezb accent [race | none | orc | troll | dwarf | undead] - show or change this character's accent",
+    "/ezb thick [on | off] - thicker accent (undead: jawless)",
 }
 
 -- A line as it could go out on your target (or a stand-in) now. Doesn't count as said.
@@ -755,7 +784,7 @@ local function Example()
     local class = valid and select(2, UnitClass("target"))
     local cast = current and current.casts and current.casts.LeftButton or { name = blessing.KINGS.name, key = "KINGS" }
     local lines = (valid and current and current.unworthy) and Pool("UNWORTHY_LINES") or Lines(cast, class)
-    return FormatMessage(lines[math.random(#lines)], name, cast.name, cast.source, valid and Lad("target"))
+    return FormatMessage(lines[math.random(#lines)], name, cast.name, cast.source, valid and Female("target"))
 end
 
 -- Adds one of your own lines; returns its number, or nil when there's nothing to add.
@@ -780,31 +809,63 @@ local function AnnounceHint()
     if not EzBlessingsDB.announce then Print("Lines go out once you turn on /ezb announce say | whisper") end
 end
 
--- Shows your accent, or sets it (arg: a key of ns.ACCENTS or its name, "locked jaw"), with a sample said only to you.
-local function SetAccent(arg)
-    if DWARF then return Print("Dwarves already speak in their own accent.") end
-    arg = arg:lower()
-    if arg ~= "" then
-        local key = ns.ACCENTS[arg] and arg
-        for k, label in pairs(ns.ACCENTS) do
-            if label == arg then key = k end
-        end
-        if not key then return Print("Accents: " .. table.concat(ns.ACCENT_ORDER, ", ") .. ".") end
-        EzBlessingsCharDB.accent = key
-    end
-    local accent = EzBlessingsCharDB.accent
-    Print("Accent: " .. ns.ACCENTS[accent] .. (arg == "" and " (/ezb accent " .. table.concat(ns.ACCENT_ORDER, "|") .. ")" or "."))
-    if accent ~= "none" then
+-- "race, none, orc, ..." from ns.ACCENTS.
+local function AccentKeys(sep)
+    local keys = {}
+    for i, a in ipairs(ns.ACCENTS) do keys[i] = a.key end
+    return table.concat(keys, sep)
+end
+
+-- What this character speaks now, with a sample said only to you.
+local function ShowAccent()
+    local a = ns.ACCENT[AccentKey()]
+    Print("Accent: " .. a.label .. ". " .. a.desc .. " (speaking: " .. (AccentLabel() or "plainly") .. ")")
+    if ChosenAccent() then
         Print("Sample: " .. FormatMessage(ns.ACCENT_SAMPLE, "Anduin Lothar", blessing.KINGS.name))
     end
 end
 
--- EzAccent's accent changed (EzAccentAPI): undead is the locked jaw, or jawless when thick; any other accent is none.
+-- 1.12's undead choices: "locked" (locked jaw) is undead, "jawless" undead with thick on.
+local OLD_ACCENTS = { locked = false, jawless = true }
+
+-- /ezb accent [key]: shows or sets this character's accent, heard on the next line.
+local function SetAccent(arg)
+    arg = arg:lower()
+    if OLD_ACCENTS[arg] ~= nil then
+        EzBlessingsCharDB.accent, EzBlessingsCharDB.thick = "undead", OLD_ACCENTS[arg]
+    elseif arg ~= "" then
+        if not ns.ACCENT[arg] then return Print("Unknown accent. Pick one of: " .. AccentKeys(", ") .. ".") end
+        EzBlessingsCharDB.accent = arg
+    end
+    ShowAccent()
+    if arg == "" then Print("Change it with /ezb accent <" .. AccentKeys(" | ") .. ">, /ezb thick on | off.") end
+end
+
+-- /ezb thick [on | off]: a thicker accent, or jawless for the undead. Alone, it switches.
+local function SetThick(arg)
+    arg = arg:lower()
+    if arg == "" or arg == "on" then
+        EzBlessingsCharDB.thick = arg == "on" or not EzBlessingsCharDB.thick
+    elseif arg == "off" then
+        EzBlessingsCharDB.thick = false
+    else
+        return Print("Use /ezb thick on, or /ezb thick off.")
+    end
+    Print("Thick accent " .. (EzBlessingsCharDB.thick and "on" or "off") .. ".")
+    ShowAccent()
+end
+
+-- EzAccent's accent changed (EzAccentAPI): the same accent and thickness here. A "race" choice that already speaks
+-- that accent is kept. Returns what it set for EzAccent's "Also set ..." line, nil when nothing changed.
 local function FromEzAccent(accent, thick)
-    local key = accent == "undead" and (thick and "jawless" or "locked") or "none"
-    if EzBlessingsCharDB.accent == key then return end
-    EzBlessingsCharDB.accent = key
-    return "EzBlessings to " .. ns.ACCENTS[key]
+    local db = EzBlessingsCharDB
+    local key = ns.ACCENT[accent] and accent ~= "race" and accent or "none"
+    thick = thick and true or false
+    local same = ChosenAccent() == (key ~= "none" and key or nil)
+    if same and (key == "none" or db.thick == thick) then return end
+    if not same then db.accent = key end
+    if key ~= "none" then db.thick = thick end
+    return "EzBlessings to " .. (AccentLabel() or "plain")
 end
 
 -- /ezb message subcommands.
@@ -881,6 +942,7 @@ local COMMANDS = {
         Print("/ezb message [add <text> | remove <n> | clear | mine | test]")
     end,
     accent = SetAccent,
+    thick = SetThick,
 }
 
 SLASH_EZBLESSINGS1 = "/ezb"
@@ -919,8 +981,17 @@ ev:SetScript("OnEvent", function(self, event, unit)
         if EzBlessingsDB.locked == nil then EzBlessingsDB.locked = true end
         if EzBlessingsDB.hideInInstances == nil then EzBlessingsDB.hideInInstances = true end
         EzBlessingsCharDB = EzBlessingsCharDB or {}
-        if not ns.ACCENTS[EzBlessingsCharDB.accent] then EzBlessingsCharDB.accent = "none" end
-        if EzAccentAPI and not DWARF then EzAccentAPI.OnAccentChanged(FromEzAccent) end
+        local db = EzBlessingsCharDB
+        -- 1.12 only had undead accents, and saved "none" for every character it saw: once, "none" becomes the race
+        -- default (dwarves kept their dwarf lines then) and "locked"/"jawless" become undead (jawless = thick).
+        if not db.accents2 then
+            if db.accent == "none" then db.accent = nil end
+            if OLD_ACCENTS[db.accent] ~= nil then db.accent, db.thick = "undead", OLD_ACCENTS[db.accent] end
+            db.accents2 = true
+        end
+        if not ns.ACCENT[db.accent] then db.accent = ns.DEFAULT_ACCENT end
+        db.thick = db.thick or false
+        if EzAccentAPI then EzAccentAPI.OnAccentChanged(FromEzAccent) end
         -- Older versions could save the default anchor without TargetFrame, putting the button off-screen.
         local p = EzBlessingsDB.pos
         if p and p[1] == "LEFT" and p[2] == "RIGHT" and p[3] == -10 and p[4] == 10 then EzBlessingsDB.pos = nil end

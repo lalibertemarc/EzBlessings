@@ -94,9 +94,29 @@ ns.UNWORTHY_GUILDS = { "olympus" }
 -- 5 minutes (Greater 15), so there it's only near the end.
 ns.REFRESH_THRESHOLD = ns.ERA and 120 or 1200
 
--- Undead accents your announce lines can be spoken in (/ezb accent, per character), respelled live by Accent.lua:
--- key -> name shown. %t, %b, %p and %l are filled in after, so names are never respelled. Dwarves keep their own
--- accent (LinesDwarf.lua) and get none of these.
-ns.ACCENTS = { none = "no accent", locked = "locked jaw", jawless = "jawless" }
-ns.ACCENT_ORDER = { "none", "locked", "jawless" }
+-- Accents: Accent.lua (EzAccent's engine) respells every announce line live, in the accent of your race (dwarves;
+-- orcs and trolls too, should they ever take up the Light; everyone else speaks plainly) unless the character
+-- chose another (EzBlessingsCharDB.accent, a key below; /ezb accent or the options page), and .thick makes any of
+-- them thicker (undead: no jaw at all). Undead is never picked by race, only chosen. %t, %b and %p are filled in
+-- after, so names and the blessing are never respelled.
+-- UnitRace's file name -> accent.
+ns.RACE_ACCENT = { Orc = "orc", Troll = "troll", Dwarf = "dwarf" }
+-- Accent choices, in menu order.
+ns.ACCENTS = {
+    { key = "race", label = "By race", desc = "Dwarves use their own accent, everyone else speaks plainly." },
+    { key = "none", label = "None", desc = "Plain lines, whatever your race." },
+    { key = "orc", label = "Orc", desc = "Lok'tar! Short, blunt, and proud of it." },
+    { key = "troll", label = "Troll", desc = "Easy now, mon. Da Light be watchin'." },
+    { key = "dwarf", label = "Dwarf", desc = "By me beard, lad! Your target is a lad or a lass." },
+    { key = "undead", label = "Undead", desc = "A locked jaw squeezes every vowel; thick: no jaw at all." },
+}
+ns.ACCENT = {}
+for _, a in ipairs(ns.ACCENTS) do ns.ACCENT[a.key] = a end
+ns.DEFAULT_ACCENT = "race"
+-- A woman hears the accent's own address words in her form (dwarf "lad" -> "lass", troll "bruddah" -> "sistah"),
+-- unless the plain line already has one of the typed words (as EzAccent does).
+ns.TO_HER = {
+    { he = "lad", she = "lass", typed = { "lad" } },
+    { he = "bruddah", she = "sistah", typed = { "brother", "bruddah" } },
+}
 ns.ACCENT_SAMPLE = "%t, may the Light guide you. I grant you %b, by the grace of the Light."

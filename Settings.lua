@@ -105,28 +105,24 @@ function ns.BuildSettings()
         function(on) EzBlessingsDB.onlyMine = on or nil end)
     onlyMine:SetPoint("TOPLEFT", radios[1], "BOTTOMLEFT", 0, -2)
 
-    -- Undead accent for every line, this character only. Dwarves have their own lines instead: no row.
-    local above, x, y = onlyMine, 4, -12
-    if not ns.DWARF then
-        local accentLabel = Label("GameFontNormal", "Accent")
-        accentLabel:SetPoint("TOPLEFT", onlyMine, "BOTTOMLEFT", 4, -10)
-        local choices = {}
-        for i, key in ipairs(ns.ACCENT_ORDER) do
-            local label = ns.ACCENTS[key]
-            choices[i] = { value = key, label = label:sub(1, 1):upper() .. label:sub(2) }
-        end
-        local accents = Radios(choices,
-            function() return EzBlessingsCharDB.accent end,
-            function(value) EzBlessingsCharDB.accent = value end)
-        accents[1]:SetPoint("LEFT", accentLabel, "RIGHT", 8, 0)
-        local accentHelp = Label("GameFontDisableSmall", "undead, this character; try a line below")
-        accentHelp:SetPoint("LEFT", accents[#accents].Text, "RIGHT", 16, 0)
-        above, x, y = accentLabel, 0, -16 -- clear of the radios, which stand taller than the label
-    end
+    -- Accent for every line, this character only: by race, none or one of them, and thick.
+    local accentLabel = Label("GameFontNormal", "Accent")
+    accentLabel:SetPoint("TOPLEFT", onlyMine, "BOTTOMLEFT", 4, -10)
+    local choices = {}
+    for i, a in ipairs(ns.ACCENTS) do choices[i] = { value = a.key, label = a.label } end
+    local accents = Radios(choices, ns.AccentKey, function(value) EzBlessingsCharDB.accent = value end)
+    accents[1]:SetPoint("LEFT", accentLabel, "RIGHT", 8, 0)
+    local thick = Check("Thick accent",
+        "A thicker accent: heavier dialect, and for the undead no jaw at all. This character only.",
+        function() return EzBlessingsCharDB.thick end,
+        function(on) EzBlessingsCharDB.thick = on and true or false end)
+    thick:SetPoint("TOPLEFT", accentLabel, "BOTTOMLEFT", -4, -8)
+    local accentHelp = Label("GameFontDisableSmall", "this character; heard on the next line, try one below")
+    accentHelp:SetPoint("LEFT", thick.Text, "RIGHT", 16, 0)
 
     -- Your lines -------------------------------------------------------------
     local linesLabel = Label("GameFontNormal", "Your lines")
-    linesLabel:SetPoint("TOPLEFT", above, "BOTTOMLEFT", x, y)
+    linesLabel:SetPoint("TOPLEFT", thick, "BOTTOMLEFT", 4, -6)
     local tokens = Label("GameFontDisableSmall", "%t = your target's full name, %b = the blessing you cast")
     tokens:SetPoint("LEFT", linesLabel, "RIGHT", 10, 0)
 

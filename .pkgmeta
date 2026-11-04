@@ -9,4 +9,4 @@ ignore:
   - .luacheckrc
   - media
   - .githooks
-  - tools
+  - tests

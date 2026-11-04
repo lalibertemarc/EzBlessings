@@ -10,7 +10,6 @@
 
 Data.lua
 Lines.lua
-LinesDwarf.lua
 AccentRules.lua
 Accent.lua
 Core.lua

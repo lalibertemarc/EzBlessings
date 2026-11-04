@@ -1,8 +1,8 @@
 # EzBlessings
 
-## Unreleased
+## v1.12.0
 
-- **The Light, through clenched teeth.** Forsaken paladins can announce their blessings in an undead accent: `/ezb accent locked` (or `jawless`, or the Accent row on the options page) respells every line live as it goes out, a little different each time. Locked jaw squeezes its vowels and strains at the end: "Huld fesst, Anduin Lothar. Blessing of Kings will see yuu thruugh. Nnn." Jawless slurs and gurgles: "Anduin Lothar, I hhrayed hhor you. Hhk. Hhe Light ansh'ered: Blessing of Kings. Hhkk." Names and the blessing are never respelled, so the target's link still works, and your own lines get the accent too. A line the accent would push past 255 characters goes out plain. Per character, off by default, takes effect right away; `/ezb accent` shows the current one with a sample, `/ezb accent none` turns it off. With [EzAccent](../EzAccent), changing its accent sets this one too (undead is locked jaw, thick undead is jawless, anything else is none). Dwarves keep their dwarf lines and get no undead accent. The rules are EzAccent's.
+- **The Light, through clenched teeth.** Forsaken paladins can announce their blessings in an undead accent: `/ezb accent locked` (or `jawless`, or the Accent row on the options page) respells every line live as it goes out, a little different each time. Locked jaw squeezes its vowels and strains at the end: "Huld fesst, Anduin Lothar. Blessing of Kings will see yuu thruugh. Nnn." Jawless slurs and gurgles: "Anduin Lothar, I hhrayed hhor you. Hhk. Hhe Light ansh'ered: Blessing of Kings. Hhkk." Names and the blessing are never respelled, so the target's link still works, and your own lines get the accent too. A line the accent would push past 255 characters goes out plain. Per character, off by default, takes effect right away; `/ezb accent` shows the current one with a sample, `/ezb accent none` turns it off. With EzAccent, changing its accent sets this one too (undead is locked jaw, thick undead is jawless, anything else is none). Dwarves keep their dwarf lines and get no undead accent. The rules are EzAccent's.
 
 ## v1.11.0
 

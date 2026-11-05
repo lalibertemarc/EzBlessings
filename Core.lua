@@ -96,16 +96,16 @@ local function ChatLocked()
     return C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()
 end
 
--- Returns name, sourceUnit, expirationTime of the i-th buff; nil past the end; false if auras are hidden.
+-- Returns name, sourceUnit, expirationTime, spellId of the i-th buff; nil past the end; false if auras are hidden.
 local function BuffAt(unit, i)
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
         -- Index access throws while auras are secret, so never call it bare.
         local ok, a = pcall(C_UnitAuras.GetAuraDataByIndex, unit, i, "HELPFUL")
         if not ok or issecret(a) then return false end
-        if a then return a.name, a.sourceUnit, a.expirationTime end
+        if a then return a.name, a.sourceUnit, a.expirationTime, a.spellId end
     else
-        local name, _, _, _, _, expires, source = UnitBuff(unit, i)
-        return name, source, expires
+        local name, _, _, _, _, expires, source, _, _, spellId = UnitBuff(unit, i)
+        return name, source, expires, spellId
     end
 end
 
@@ -114,6 +114,24 @@ end
 ---------------------------------------------------------------------------
 local blessing = ns.BLESSINGS -- key -> { ranks, greater } from Data.lua, plus name, short, icon added below
 local nameToKey = {}          -- localized buff name (normal or greater) -> key
+local greaterName = {}        -- localized Greater buff name -> true
+
+-- How strong each rank is, to tell when a cast would bounce off "A more powerful spell is already active".
+-- A normal rank is its index; a Greater rank gives what the highest normal rank learned at its level gives
+-- (Greater Might 1 at 52 = Might 6) and wins ties, so a normal blessing never replaces an equal Greater one.
+local power = {}               -- spellId -> power
+local greaterTop = {}          -- key -> power of its highest Greater rank, for an aura whose spellId can't be read
+for key, b in pairs(blessing) do
+    for i, r in ipairs(b.ranks) do power[r[1]] = i end
+    for _, g in ipairs(b.greater) do
+        local equal = 1
+        for i, r in ipairs(b.ranks) do
+            if r[2] <= g[2] then equal = i end
+        end
+        power[g[1]] = equal + 0.5
+        greaterTop[key] = equal + 0.5
+    end
+end
 
 -- Whole words shared by every blessing name ("Blessing of ", "Bénédiction de ", ...).
 local function SharedPrefix()
@@ -132,12 +150,13 @@ end
 
 local function RefreshSpells()
     wipe(nameToKey)
+    wipe(greaterName)
     for key, b in pairs(blessing) do
         local name, icon = SpellInfo(b.ranks[1][1])
-        local greaterName = SpellInfo(b.greater[1][1])
+        local gName = SpellInfo(b.greater[1][1])
         b.name, b.icon = name or key, icon or 134400
         if name then nameToKey[name] = key end
-        if greaterName then nameToKey[greaterName] = key end
+        if gName then nameToKey[gName], greaterName[gName] = key, true end
     end
 
     -- Button label shows only the part that differs ("Might", "Kings") in any client language.
@@ -181,24 +200,34 @@ local function ValidTarget(unit)
         and not UnitIsDeadOrGhost(unit)
 end
 
--- Returns key -> { mine, source, remaining } for blessings on the unit, or nil if auras are hidden.
+-- Returns key -> { mine, source, remaining, power } for blessings on the unit, or nil if auras are hidden.
+-- power is nil when the rank can't be told (see power above).
 local function ScanBlessings(unit)
     if AurasHidden() then return nil end
     local found, now = {}, GetTime()
     for i = 1, 40 do
-        local name, source, expires = BuffAt(unit, i)
+        local name, source, expires, spellId = BuffAt(unit, i)
         if name == false then return nil end
         if not name then break end
         local key = not (issecret(name) or issecret(source) or issecret(expires)) and nameToKey[name]
         if key then
+            local p = spellId and not issecret(spellId) and power[spellId]
+            if not p and greaterName[name] then p = greaterTop[key] end
             found[key] = {
                 mine = source ~= nil and UnitIsUnit(source, "player"),
                 source = source and UnitName(source),
                 remaining = (expires and expires > 0) and (expires - now) or nil,
+                power = p or nil,
             }
         end
     end
     return found
+end
+
+-- True when a stronger rank of this blessing (or an equal Greater one) is already on the unit,
+-- so casting spellId would fail with "A more powerful spell is already active".
+local function Outranked(f, spellId)
+    return f ~= nil and f.power ~= nil and power[spellId] ~= nil and f.power > power[spellId]
 end
 
 -- OlympusMute's saved lists, when that addon is loaded, so both addons agree on who's unworthy.
@@ -283,12 +312,24 @@ local function Evaluate(unit)
     r.hidden = found == nil
     found = found or {}
 
+    -- Greater blessings only reach party/raid members.
+    local function GreaterId(key)
+        return r.grouped and BestRank(blessing[key].greater, level) or nil
+    end
+    -- Some mouse button can still land this blessing over what's on the target.
+    local function Landable(key, spellId, f)
+        if not Outranked(f, spellId) then return true end
+        local g = GreaterId(key)
+        return g ~= nil and not Outranked(f, g)
+    end
+
     for _, key in ipairs(prio) do
         local f = found[key]
         local spellId, anyKnown = BestRank(blessing[key].ranks, level)
         local state
         if f and f.mine then
-            state = (spellId and f.remaining and f.remaining <= ns.REFRESH_THRESHOLD) and "expiring" or "mine"
+            state = (spellId and f.remaining and f.remaining <= ns.REFRESH_THRESHOLD and Landable(key, spellId, f))
+                and "expiring" or "mine"
         elseif f then
             state = "other"
         elseif not anyKnown then
@@ -300,7 +341,8 @@ local function Evaluate(unit)
         else
             state = "missing"
         end
-        local e = { key = key, state = state, spellId = spellId, source = f and f.source, remaining = f and f.remaining }
+        local e = { key = key, state = state, spellId = spellId, source = f and f.source, remaining = f and f.remaining,
+            aura = f }
         r.list[#r.list + 1] = e
 
         -- One blessing per paladin per target: the first slot not covered by someone else decides.
@@ -316,7 +358,8 @@ local function Evaluate(unit)
     -- Everything is covered by other paladins: refresh the most wanted one you can cast rather than give nothing.
     if not (r.rec or r.done or r.unworthy) then
         for _, e in ipairs(r.list) do
-            if e.state == "other" and e.spellId and not (ns.GROUP_ONLY[e.key] and not r.grouped) then
+            if e.state == "other" and e.spellId and not (ns.GROUP_ONLY[e.key] and not r.grouped)
+                and Landable(e.key, e.spellId, e.aura) then
                 r.rec, r.refresh = e, true
                 break
             end
@@ -325,13 +368,12 @@ local function Evaluate(unit)
 
     if r.rec then
         r.spell = CastName(r.rec.spellId)
-        -- Greater blessings only reach party/raid members.
-        local greaterId = r.grouped and BestRank(blessing[r.rec.key].greater, level)
+        local greaterId = GreaterId(r.rec.key)
         r.greater = greaterId and CastName(greaterId)
-        -- What each mouse button casts, for /ezb announce.
+        -- What each mouse button casts, for /ezb announce. blocked = a stronger one is on them, the cast will bounce.
         local function Cast(id, name)
             return { id = id, name = name, key = r.rec.key, refresh = r.rec.state == "expiring",
-                renewOther = r.refresh, source = r.rec.source }
+                renewOther = r.refresh, source = r.rec.source, blocked = Outranked(r.rec.aura, id) }
         end
         local normal = Cast(r.rec.spellId, blessing[r.rec.key].name)
         r.casts = { LeftButton = normal, RightButton = greaterId and Cast(greaterId, SpellInfo(greaterId)) or normal }
@@ -564,14 +606,26 @@ local function LinkTarget(_, _, msg, ...)
 end
 
 -- Runs inside the click or key press, before the secure cast: addons can only send chat then.
--- Skipped when the cast would fail anyway (range, mounted, cooldown, mana), so a spammed press says it once.
+-- Skipped when the cast would fail anyway (range, mounted, cooldown, mana, a stronger one already on them),
+-- so a spammed press says it once.
 local lastRefusal = -math.huge -- GetTime() of your last line to an unworthy target
+
+-- A stronger rank of the cast's blessing is on the target right now. Read live: the button's casts can't
+-- change in combat, while the target's buffs can.
+local function Bounces(cast)
+    local found = ScanBlessings("target")
+    if not found then return cast.blocked == true end -- buffs hidden: trust the last reading
+    return Outranked(found[cast.key], cast.id)
+end
 
 -- The line for this press, or nil to stay quiet: a blessing line when the cast can land, a refusal
 -- (ns.UNWORTHY_LINES) when the target is unworthy and nothing is cast.
 local function LineFor(cast, class)
     if cast then
-        if IsMounted() or InRange(cast.id, "target") == false or OnCooldown(cast.id) or not Usable(cast.id) then return nil end
+        if IsMounted() or InRange(cast.id, "target") == false or OnCooldown(cast.id) or not Usable(cast.id)
+            or Bounces(cast) then
+            return nil
+        end
         return PickLine(Lines(cast, class))
     elseif current and current.unworthy then
         local now = GetTime()
@@ -653,6 +707,9 @@ local function ShowTooltip()
     end
     if current.refresh then
         GameTooltip:AddLine(format("All covered: refreshes %s's blessing.", current.rec.source or "another paladin"), 0.6, 0.6, 0.6)
+    end
+    if current.casts and current.casts.LeftButton.blocked then
+        GameTooltip:AddLine("A stronger one is on them: only the Greater blessing can replace it.", 1, 0.5, 0.1)
     end
     GameTooltip:AddLine("Left-click: cast blessing   Right-click: Greater", 0.6, 0.6, 0.6)
     GameTooltip:AddLine("Options and announce lines: /ezb", 0.6, 0.6, 0.6)

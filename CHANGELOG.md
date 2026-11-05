@@ -3,6 +3,7 @@
 ## Unreleased
 
 - **Orcs still offer.** In the orc accent, "Would you like...?" lines stay questions ("You want...?") instead of turning into orders.
+- **No speech for a blessing that won't land.** When a stronger blessing of the same kind is already on your target (a Greater one, or a higher rank), the cast fails with "A more powerful spell is already active", and now the announce line stays quiet too. The button also stops suggesting to refresh another paladin's blessing you can't replace, and its tooltip says when only the Greater blessing (right-click) can.
 
 ## v1.13.0
 

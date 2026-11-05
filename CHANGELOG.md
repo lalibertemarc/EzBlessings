@@ -1,5 +1,9 @@
 # EzBlessings
 
+## Unreleased
+
+- **Orcs still offer.** In the orc accent, "Would you like...?" lines stay questions ("You want...?") instead of turning into orders.
+
 ## v1.13.0
 
 - **Every accent, light or thick.** Announce lines can now be said in a dwarf, orc, troll or undead accent, on any paladin: `/ezb accent dwarf` (or `orc`, `troll`, `undead`, `none`, or the Accent dropdown on the options page). `/ezb thick` (or the new Thick accent checkbox) makes it heavier: "Och! Anduin Lothar, may the Licht guide ye. Ah grant ye Blessing of Kings, lad." For the undead, thick is the jawless voice; `/ezb accent locked` and `jawless` still work. The default is By race: dwarves speak dwarf, everyone else plainly. Every line, your own included, is respelled live as it goes out, a little different each time, and a woman hears "lass" instead of "lad". Per character, takes effect on the next line.

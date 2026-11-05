@@ -35,6 +35,15 @@ if ns.ERA then
     }
 end
 
+-- Forever camps: each camp object puts a hidden aura on everyone at the camp (listed in their "Camp Benefits"
+-- buff) that blocks the blessing it copies, so yours would bounce. key -> the camp object's aura spell ID
+-- (same IDs as Buff Me Please's ns.CAMP). No camps in Classic Era.
+ns.CAMP = ns.ERA and {} or {
+    KINGS  = 1230098, -- Fish Bowl
+    WISDOM = 1230587, -- Mana Well
+    MIGHT  = 1230164, -- Lodestone
+}
+
 -- A rank can't be cast on a target more than this many levels below the level it's learned at.
 ns.RANK_LEVEL_GAP = 10
 

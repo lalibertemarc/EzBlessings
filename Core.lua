@@ -53,6 +53,20 @@ local function InRange(id, unit)
     return r == true or r == 1
 end
 
+-- Seconds left on the unit's aura of that spell (0 if it never expires), hidden ones like the camp objects'
+-- included; nil without it or while it can't be read.
+local function AuraLeft(unit, spellId)
+    local get = C_UnitAuras and C_UnitAuras.GetUnitAuraBySpellID
+    local ok, a
+    if get then
+        ok, a = pcall(get, unit, spellId)
+    elseif C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID and UnitIsUnit(unit, "player") then
+        ok, a = pcall(C_UnitAuras.GetPlayerAuraBySpellID, spellId)
+    end
+    if not ok or not a or issecret(a) or issecret(a.expirationTime) then return nil end
+    return a.expirationTime > 0 and a.expirationTime - GetTime() or 0
+end
+
 local function AurasHidden()
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
 end
@@ -200,8 +214,9 @@ local function ValidTarget(unit)
         and not UnitIsDeadOrGhost(unit)
 end
 
--- Returns key -> { mine, source, remaining, power } for blessings on the unit, or nil if auras are hidden.
--- power is nil when the rank can't be told (see power above).
+-- Returns key -> { mine, source, remaining, power, camp } for blessings on the unit, or nil if auras are hidden.
+-- power is nil when the rank can't be told (see power above). camp = a camp object gives it (ns.CAMP), so no
+-- paladin's blessing of that kind lands until it drops.
 local function ScanBlessings(unit)
     if AurasHidden() then return nil end
     local found, now = {}, GetTime()
@@ -221,12 +236,17 @@ local function ScanBlessings(unit)
             }
         end
     end
+    for key, spellId in pairs(ns.CAMP) do
+        local left = not found[key] and AuraLeft(unit, spellId)
+        if left then found[key] = { camp = true, remaining = left > 0 and left or nil } end
+    end
     return found
 end
 
--- True when a stronger rank of this blessing (or an equal Greater one) is already on the unit,
+-- True when a camp's blessing, a stronger rank of this one or an equal Greater one is already on the unit,
 -- so casting spellId would fail with "A more powerful spell is already active".
 local function Outranked(f, spellId)
+    if f and f.camp then return true end
     return f ~= nil and f.power ~= nil and power[spellId] ~= nil and f.power > power[spellId]
 end
 
@@ -288,6 +308,7 @@ local function InGroup(unit)
 end
 
 -- Entry states: "missing", "expiring" (yours, about to drop), "mine", "other" (another paladin's),
+-- "camp" (a camp object gives it; nothing lands over it, never refreshed),
 -- "unknown" (not learned), "lowlevel" (no rank you know fits the target's level),
 -- "nogroup" (group-only blessing, target not in your group).
 -- Entry: { key, state, spellId (rank to cast), source, remaining }
@@ -330,6 +351,8 @@ local function Evaluate(unit)
         if f and f.mine then
             state = (spellId and f.remaining and f.remaining <= ns.REFRESH_THRESHOLD and Landable(key, spellId, f))
                 and "expiring" or "mine"
+        elseif f and f.camp then
+            state = "camp"
         elseif f then
             state = "other"
         elseif not anyKnown then
@@ -662,6 +685,7 @@ local STATE_TEXT = {
     expiring = "|cffffd000yours, expiring|r",
     mine     = "|cff40ff40yours|r",
     other    = "|cff40ff40from %s|r",
+    camp     = "|cff40ff40from camp|r",
     unknown  = "|cff808080not learned|r",
     lowlevel = "|cff808080target too low|r",
     nogroup  = "|cff808080group only|r",

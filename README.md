@@ -38,12 +38,13 @@ World of Warcraft\_classic_beta_\Interface\AddOns\
 
 ## Options
 
-Type `/ezb` (or open Esc > Options > AddOns > EzBlessings) for the options page:
+Type `/ezb` (or open Esc > Options > AddOns > EzBlessings) for the options page, laid out like our other addons' (Blizzard's settings list):
 
-- **Announce**: Off, Say (/s) or Whisper the target, and whether to use only your own lines.
-- **Accent**: By race (the default: dwarves speak dwarf, everyone else plainly), None, Orc, Troll, Dwarf or Undead, plus Thick accent, for this character. "Try a line" below shows it.
-- **Your lines**: type a line and click Add (or press Enter); each one in the list has a Remove button. `%t` is the target's full name (a class-colored player link in your own chat), `%b` the blessing cast. "Try a line" shows a random line as it would go out on your target.
-- **Button**: lock position, hide in dungeons and raids, withhold blessings from the unworthy, reset position, and a shortcut to the Key Bindings page.
+- **Announce**: a dropdown (Off, /say, Whisper), "Use only my lines", and an Edit button for **Your lines**.
+- **Your character**: Accent dropdown (By race, the default: dwarves speak dwarf, everyone else plainly; None, Orc, Troll, Dwarf or Undead), Thick accent, and Preview, which prints a few lines to your chat as they could go out on your target.
+- **Button**: lock position, hide in dungeons and raids (Forever only), withhold blessings from the unworthy, Reset position, and a shortcut to the Key Bindings page.
+
+**Your lines** is a subpage (also under EzBlessings in the list on the left): type a line and click Add (or press Enter); each one in the list has a Remove button. `%t` is the target's full name (a class-colored player link in your own chat), `%b` the blessing cast. "Try a line" shows a random line as it would go out on your target.
 
 ## Commands
 

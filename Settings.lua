@@ -1,24 +1,19 @@
--- Options page: Esc > Options > AddOns > EzBlessings, or /ezb. Built at login, paladins only.
--- A canvas page with its own widgets: no Blizzard dropdown menus (they crash in combat on Forever)
--- and no search tags (they taint the options search).
+-- Options page: Esc > Options > AddOns > EzBlessings, or /ezb. Built at login, once the saved variables exist.
+-- The main page is Blizzard's settings list, as in our other addons; your own lines get a subpage of their own
+-- widgets (a list can't live in the settings list). No inline binding rows or search tags: they taint the options
+-- search in Forever.
 local _, ns = ...
 
-local ROW_HEIGHT, VISIBLE_ROWS = 22, 5
-local LIST_WIDTH = 520
+local ROW_HEIGHT, VISIBLE_ROWS = 22, 8
+local LIST_WIDTH = 560
 
-local ANNOUNCE_CHOICES = {
-    { value = nil, label = "Off" },
-    { value = "say", label = "Say (/s)" },
-    { value = "whisper", label = "Whisper the target" },
-}
+-- EzBlessingsDB.announce: nil = off.
+local ANNOUNCE_OFF = "off"
 
-function ns.BuildSettings()
+-- "Your lines" subpage: add box, the list with Remove buttons, and a sample line.
+local function BuildLinesPage(parent)
     local panel = CreateFrame("Frame")
-    local category = Settings.RegisterCanvasLayoutCategory(panel, "EzBlessings")
-    Settings.RegisterAddOnCategory(category)
-    ns.settingsCategory = category
-
-    local refreshers = {} -- run on show, so changes made with slash commands are picked up
+    local category = Settings.RegisterCanvasLayoutSubcategory(parent, panel, "Your lines")
 
     local function Label(font, text, width)
         local fs = panel:CreateFontString(nil, "ARTWORK", font)
@@ -28,107 +23,25 @@ function ns.BuildSettings()
         return fs
     end
 
-    local function Button(text, width, onClick, parent)
-        local b = CreateFrame("Button", nil, parent or panel, "UIPanelButtonTemplate")
+    local function Button(text, width, onClick, owner)
+        local b = CreateFrame("Button", nil, owner or panel, "UIPanelButtonTemplate")
         b:SetSize(width, 22)
         b:SetText(text)
         b:SetScript("OnClick", onClick)
         return b
     end
 
-    local function Check(text, tooltip, get, set)
-        local check = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-        check:SetSize(26, 26)
-        check.Text:SetFontObject(GameFontHighlight)
-        check.Text:SetText(text)
-        check:SetScript("OnClick", function(self)
-            set(self:GetChecked())
-            ns.Update()
-        end)
-        if tooltip then
-            check:SetScript("OnEnter", function(self)
-                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                GameTooltip:SetText(text, 1, 1, 1)
-                GameTooltip:AddLine(tooltip, nil, nil, nil, true)
-                GameTooltip:Show()
-            end)
-            check:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        end
-        refreshers[#refreshers + 1] = function() check:SetChecked(get() and true or false) end
-        return check
-    end
-
-    -- Header -----------------------------------------------------------------
-    local title = Label("GameFontNormalHuge", "EzBlessings")
+    local title = Label("GameFontNormalHuge", "Your lines")
     title:SetPoint("TOPLEFT", 16, -16)
-    local subtitle = Label("GameFontHighlightSmall", "Shows which blessing your friendly target needs. None go unblessed.")
-    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
-
-    -- Announce ---------------------------------------------------------------
-    local announceHeader = Label("GameFontHighlightLarge", "Announce")
-    announceHeader:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", 0, -20)
-    local announceHelp = Label("GameFontHighlightSmall",
-        "Say a line to your target when you bless them with the EzBlessings button or its key bindings. "
-        .. "Each time, one line is picked at random from the built-in ones and yours.", LIST_WIDTH + 30)
-    announceHelp:SetPoint("TOPLEFT", announceHeader, "BOTTOMLEFT", 0, -6)
-
-    -- A row of check buttons of which one is on (choices: { value, label }); the caller places the first.
-    local function Radios(choices, get, set)
-        local radios = {}
-        for i, choice in ipairs(choices) do
-            local radio = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-            radio:SetSize(26, 26)
-            radio.Text:SetFontObject(GameFontHighlight)
-            radio.Text:SetText(choice.label)
-            if i > 1 then radio:SetPoint("LEFT", radios[i - 1].Text, "RIGHT", 24, 0) end
-            radio:SetScript("OnClick", function()
-                set(choice.value)
-                for j, r in ipairs(radios) do r:SetChecked(choices[j].value == choice.value) end
-                ns.Update()
-            end)
-            radios[i] = radio
-        end
-        refreshers[#refreshers + 1] = function()
-            for j, r in ipairs(radios) do r:SetChecked(choices[j].value == get()) end
-        end
-        return radios
-    end
-
-    local radios = Radios(ANNOUNCE_CHOICES,
-        function() return EzBlessingsDB.announce end,
-        function(value) EzBlessingsDB.announce = value end)
-    radios[1]:SetPoint("TOPLEFT", announceHelp, "BOTTOMLEFT", -4, -8)
-
-    local onlyMine = Check("Use only my lines",
-        "Leave out the built-in lines. While you have no lines of your own, the built-in ones are still used.",
-        function() return EzBlessingsDB.onlyMine end,
-        function(on) EzBlessingsDB.onlyMine = on or nil end)
-    onlyMine:SetPoint("TOPLEFT", radios[1], "BOTTOMLEFT", 0, -2)
-
-    -- Accent for every line, this character only: by race, none or one of them, and thick.
-    local accentLabel = Label("GameFontNormal", "Accent")
-    accentLabel:SetPoint("TOPLEFT", onlyMine, "BOTTOMLEFT", 4, -10)
-    local choices = {}
-    for i, a in ipairs(ns.ACCENTS) do choices[i] = { value = a.key, label = a.label } end
-    local accents = Radios(choices, ns.AccentKey, function(value) EzBlessingsCharDB.accent = value end)
-    accents[1]:SetPoint("LEFT", accentLabel, "RIGHT", 8, 0)
-    local thick = Check("Thick accent",
-        "A thicker accent: heavier dialect, and for the undead no jaw at all. This character only.",
-        function() return EzBlessingsCharDB.thick end,
-        function(on) EzBlessingsCharDB.thick = on and true or false end)
-    thick:SetPoint("TOPLEFT", accentLabel, "BOTTOMLEFT", -4, -8)
-    local accentHelp = Label("GameFontDisableSmall", "this character; heard on the next line, try one below")
-    accentHelp:SetPoint("LEFT", thick.Text, "RIGHT", 16, 0)
-
-    -- Your lines -------------------------------------------------------------
-    local linesLabel = Label("GameFontNormal", "Your lines")
-    linesLabel:SetPoint("TOPLEFT", thick, "BOTTOMLEFT", 4, -6)
-    local tokens = Label("GameFontDisableSmall", "%t = your target's full name, %b = the blessing you cast")
-    tokens:SetPoint("LEFT", linesLabel, "RIGHT", 10, 0)
+    local help = Label("GameFontHighlightSmall",
+        "Each announce picks one line at random from the built-in ones and yours (or yours alone, with "
+        .. "\"Use only my lines\" on the main page). %t = your target's full name, %b = the blessing you cast. "
+        .. "Your accent respells them as they go out.", LIST_WIDTH)
+    help:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
 
     local input = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
     input:SetSize(LIST_WIDTH - 80, 22)
-    input:SetPoint("TOPLEFT", linesLabel, "BOTTOMLEFT", 6, -6)
+    input:SetPoint("TOPLEFT", help, "BOTTOMLEFT", 6, -14)
     input:SetAutoFocus(false)
     input:SetMaxLetters(255)
     local placeholder = input:CreateFontString(nil, "ARTWORK", "GameFontDisable")
@@ -215,50 +128,93 @@ function ns.BuildSettings()
         content:SetHeight(math.max(1, #mine * ROW_HEIGHT))
         empty:SetShown(#mine == 0)
     end
-    refreshers[#refreshers + 1] = RefreshList
 
     local example = Label("GameFontHighlightSmall", "", LIST_WIDTH - 100)
     local try = Button("Try a line", 90, function() example:SetText(ns.Example()) end)
     try:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -8)
     example:SetPoint("LEFT", try, "RIGHT", 10, 0)
-    refreshers[#refreshers + 1] = function() example:SetText("") end
 
-    -- Button -----------------------------------------------------------------
-    local buttonHeader = Label("GameFontHighlightLarge", "Button")
-    buttonHeader:SetPoint("TOPLEFT", try, "BOTTOMLEFT", 0, -22)
+    -- Run on show, so lines added with /ezb message are picked up.
+    panel:SetScript("OnShow", function()
+        RefreshList()
+        example:SetText("")
+    end)
+    return category
+end
 
-    local lock = Check("Lock position", "Shift-drag still moves the button.",
-        function() return EzBlessingsDB.locked end,
-        function(on) EzBlessingsDB.locked = on end)
-    lock:SetPoint("TOPLEFT", buttonHeader, "BOTTOMLEFT", -4, -6)
+function ns.BuildSettings()
+    local category, layout = Settings.RegisterVerticalLayoutCategory("EzBlessings")
+    ns.settingsCategory = category
 
-    -- Only Forever hides buffs in instances; Classic Era gets no checkbox.
-    local instances = lock
-    if not ns.ERA then
-        instances = Check("Hide in dungeons and raids",
-            "The game hides buffs from addons there, so the button can't tell what's missing.",
-            function() return EzBlessingsDB.hideInInstances end,
-            function(on) EzBlessingsDB.hideInInstances = on end)
-        instances:SetPoint("TOPLEFT", lock, "BOTTOMLEFT", 0, -2)
+    local function Header(text)
+        layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(text))
     end
 
-    local olympus = Check("Withhold blessings from the unworthy",
-        "Players whose guild name contains \"Olympus\" get nothing. With OlympusMute installed, its lists are used.",
-        function() return EzBlessingsDB.skipUnworthy end,
-        function(on) EzBlessingsDB.skipUnworthy = on end)
-    olympus:SetPoint("TOPLEFT", instances, "BOTTOMLEFT", 0, -2)
+    local function Button(name, text, onClick, tooltip)
+        layout:AddInitializer(CreateSettingsButtonInitializer(name, text, onClick, tooltip, false))
+    end
 
-    local reset = Button("Reset position", 120, ns.ResetPosition)
-    reset:SetPoint("TOPLEFT", olympus, "BOTTOMLEFT", 4, -10)
-    -- A link instead of binding rows on this page: those taint the options search.
-    local bindings = Button("Key Bindings", 120, function()
-        Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, "EzBlessings")
-    end)
-    bindings:SetPoint("LEFT", reset, "RIGHT", 8, 0)
+    local function Choices(list)
+        return function()
+            local container = Settings.CreateControlTextContainer()
+            for _, o in ipairs(list) do container:Add(o.key, o.label, o.desc) end
+            return container:GetData()
+        end
+    end
 
-    panel:SetScript("OnShow", function()
-        for _, refresh in ipairs(refreshers) do refresh() end
-    end)
+    -- A checkbox on a key of tbl; the button follows at once.
+    local function Check(tbl, key, name, default, tooltip)
+        local setting = Settings.RegisterAddOnSetting(category, "EZBLESSINGS_" .. key:upper(), key, tbl,
+            Settings.VarType.Boolean, name, default)
+        setting:SetValueChangedCallback(function() ns.Update() end)
+        Settings.CreateCheckbox(category, setting, tooltip)
+    end
+
+    Header("Announce")
+    -- nil means off in the saved variables, so this one goes through a proxy.
+    local announce = Settings.RegisterProxySetting(category, "EZBLESSINGS_ANNOUNCE", Settings.VarType.String,
+        "Announce", ANNOUNCE_OFF,
+        function() return EzBlessingsDB.announce or ANNOUNCE_OFF end,
+        function(value) EzBlessingsDB.announce = value ~= ANNOUNCE_OFF and value or nil end)
+    Settings.CreateDropdown(category, announce, Choices({
+        { key = ANNOUNCE_OFF, label = "Off", desc = "Blessings are cast in silence." },
+        { key = "say", label = "/say", desc = "Everyone nearby hears you bless your target." },
+        { key = "whisper", label = "Whisper", desc = "Only your target hears you." },
+    }), "Say a line to your target when you bless them with the EzBlessings button or its keys. Shared by all your characters.")
+    Check(EzBlessingsDB, "onlyMine", "Use only my lines", false,
+        "Leave out the built-in lines. While you have no lines of your own, the built-in ones are still used.")
+    local lines = BuildLinesPage(category)
+    Button("Your lines", "Edit",
+        function() Settings.OpenToCategory(lines:GetID()) end,
+        "Add or remove lines of your own, mixed in with the built-in ones. Also under EzBlessings in the list on the left.")
+
+    Header("Your character")
+    -- Per character: each of your paladins can have a voice of their own.
+    local accent = Settings.RegisterAddOnSetting(category, "EZBLESSINGS_ACCENT", "accent", EzBlessingsCharDB,
+        Settings.VarType.String, "Accent", ns.DEFAULT_ACCENT)
+    Settings.CreateDropdown(category, accent, Choices(ns.ACCENTS),
+        "The accent this character's lines are said in, heard on the next one. Each character has their own.")
+    local thick = Settings.RegisterAddOnSetting(category, "EZBLESSINGS_THICK", "thick", EzBlessingsCharDB,
+        Settings.VarType.Boolean, "Thick accent", false)
+    Settings.CreateCheckbox(category, thick, "A thicker accent. For the undead: no jaw at all.")
+    Button("Sample lines", "Preview", function() ns.Preview() end,
+        "Prints a few lines in this accent to your chat, to your target if you have one. Only you see them.")
+
+    Header("Button")
+    Check(EzBlessingsDB, "locked", "Lock position", true, "Shift-drag always moves the button.")
+    -- Only Forever hides buffs in instances; Classic Era gets no checkbox.
+    if not ns.ERA then
+        Check(EzBlessingsDB, "hideInInstances", "Hide in dungeons and raids", true,
+            "The game hides buffs from addons there, so the button can't tell what's missing.")
+    end
+    Check(EzBlessingsDB, "skipUnworthy", "Withhold blessings from the unworthy", false,
+        "Players whose guild name contains \"Olympus\" get nothing. With OlympusMute installed, its lists are used.")
+    Button("Position", "Reset", function() ns.ResetPosition() end, "Put the button back beside the target frame.")
+    Button("Key bindings", "Key Bindings",
+        function() Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID, "EzBlessings") end,
+        "Bind the blessing keys in the EzBlessings section of the Key Bindings page.")
+
+    Settings.RegisterAddOnCategory(category)
 end
 
 function ns.OpenSettings()

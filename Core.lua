@@ -805,6 +805,12 @@ end
 
 ns.Example = Example
 
+-- Options page "Preview": a few lines as they could go out now, only to you.
+function ns.Preview()
+    Print("Speaking " .. (AccentLabel() or "plainly") .. ", e.g.:")
+    for _ = 1, 3 do DEFAULT_CHAT_FRAME:AddMessage("  " .. Example()) end
+end
+
 local function AnnounceHint()
     if not EzBlessingsDB.announce then Print("Lines go out once you turn on /ezb announce say | whisper") end
 end

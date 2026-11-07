@@ -1,6 +1,6 @@
 # EzBlessings
 
-## Unreleased
+## v1.13.1
 
 - **Orcs still offer.** In the orc accent, "Would you like...?" lines stay questions ("You want...?") instead of turning into orders.
 - **Camps count.** At a camp, the Fish Bowl, Mana Well and Lodestone already give Kings, Wisdom and Might, and a paladin's blessing of that kind won't land on top. The button now sees them on your target ("from camp" in the tooltip) and suggests the next blessing instead, and the announce line stays quiet if you cast it anyway.

@@ -1,5 +1,9 @@
 # EzBlessings
 
+## Unreleased
+
+- **No speech over another paladin's blessing that won't budge.** When everything is covered and the button offers a "(refresh)", it now only does so when your rank is surely stronger than the other paladin's: an equal rank, or one it can't read, bounced with "A more powerful spell is already active" while your announce line still went out. And if a cast ever bounces anyway, the button remembers that blessing on that player and stays quiet about it until it drops.
+
 ## v1.13.1
 
 - **Orcs still offer.** In the orc accent, "Would you like...?" lines stay questions ("You want...?") instead of turning into orders.

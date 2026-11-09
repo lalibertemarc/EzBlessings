@@ -18,7 +18,7 @@ read_globals = {
     "format", "floor", "strtrim", "wipe", "unpack",
     -- Frames & UI
     "CreateFrame", "UIParent", "TargetFrame", "GameTooltip", "DEFAULT_CHAT_FRAME", "Settings", "CreateSettingsListSectionHeaderInitializer", "CreateSettingsButtonInitializer", "ChatFrameUtil", "ChatFrame_AddMessageEventFilter",
-    "RAID_CLASS_COLORS", "NORMAL_FONT_COLOR",
+    "RAID_CLASS_COLORS", "NORMAL_FONT_COLOR", "SPELL_FAILED_AURA_BOUNCED",
     -- Namespaced APIs
     "C_Spell", "C_SpellBook", "C_UnitAuras", "C_Timer", "C_Secrets", "C_ChatInfo", "issecretvalue",
     -- Global APIs

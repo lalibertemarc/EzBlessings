@@ -214,12 +214,21 @@ local function ValidTarget(unit)
         and not UnitIsDeadOrGhost(unit)
 end
 
--- Returns key -> { mine, source, remaining, power, camp } for blessings on the unit, or nil if auras are hidden.
--- power is nil when the rank can't be told (see power above). camp = a camp object gives it (ns.CAMP), so no
--- paladin's blessing of that kind lands until it drops.
+-- "<GUID>:<key>" -> expirationTime of another paladin's blessing your cast bounced off ("A more powerful spell
+-- is already active"), so that blessing counts as stronger until it's recast or drops, whatever its rank says.
+local bounced = {}
+
+local function UnitId(unit)
+    local guid = UnitGUID(unit)
+    return guid and not issecret(guid) and guid or nil
+end
+
+-- Returns key -> { mine, source, remaining, expires, power, camp, bounced } for blessings on the unit, or nil
+-- if auras are hidden. power is nil when the rank can't be told (see power above). camp = a camp object gives
+-- it (ns.CAMP), so no paladin's blessing of that kind lands until it drops. bounced = see bounced above.
 local function ScanBlessings(unit)
     if AurasHidden() then return nil end
-    local found, now = {}, GetTime()
+    local found, now, guid = {}, GetTime(), UnitId(unit)
     for i = 1, 40 do
         local name, source, expires, spellId = BuffAt(unit, i)
         if name == false then return nil end
@@ -232,7 +241,9 @@ local function ScanBlessings(unit)
                 mine = source ~= nil and UnitIsUnit(source, "player"),
                 source = source and UnitName(source),
                 remaining = (expires and expires > 0) and (expires - now) or nil,
+                expires = expires,
                 power = p or nil,
+                bounced = guid ~= nil and expires ~= nil and bounced[guid .. ":" .. key] == expires,
             }
         end
     end
@@ -243,11 +254,16 @@ local function ScanBlessings(unit)
     return found
 end
 
--- True when a camp's blessing, a stronger rank of this one or an equal Greater one is already on the unit,
--- so casting spellId would fail with "A more powerful spell is already active".
+-- True when casting spellId over f (the blessing of that kind on the unit) would fail with "A more powerful
+-- spell is already active": a camp's blessing, one a cast already bounced off, a stronger rank of your own, or
+-- another paladin's unless spellId is surely stronger (Forever bounced equal ranks, and an unreadable rank
+-- can't be compared).
 local function Outranked(f, spellId)
-    if f and f.camp then return true end
-    return f ~= nil and f.power ~= nil and power[spellId] ~= nil and f.power > power[spellId]
+    if not f then return false end
+    if f.camp or f.bounced then return true end
+    local theirs, mine = f.power, power[spellId]
+    if f.mine then return theirs ~= nil and mine ~= nil and theirs > mine end
+    return not (theirs and mine and mine > theirs)
 end
 
 -- OlympusMute's saved lists, when that addon is loaded, so both addons agree on who's unworthy.
@@ -658,14 +674,18 @@ local function LineFor(cast, class)
     end
 end
 
+-- The cast this press makes, so a "more powerful spell" error right after can be pinned on its blessing.
+local lastCast -- { key, guid, t }
+
 btn:SetScript("PreClick", function(self, button)
+    local cast = self.casts and self.casts[button]
+    lastCast = cast and { key = cast.key, guid = UnitId("target"), t = GetTime() } or nil
     local channel = EzBlessingsDB.announce
     if not (channel == "say" or channel == "whisper") or ChatLocked() then return end
     if not ValidTarget("target") or UnitIsUnit("target", "player") then return end
     local name = FullName("target")
     if not name then return end
     local _, class = UnitClass("target")
-    local cast = self.casts and self.casts[button]
     local line = LineFor(cast, class)
     if not line then return end
     local msg = FormatMessage(line, name, cast and cast.name, cast and cast.source, Female("target"))
@@ -1052,7 +1072,18 @@ end
 ---------------------------------------------------------------------------
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("PLAYER_LOGIN")
-ev:SetScript("OnEvent", function(self, event, unit)
+ev:SetScript("OnEvent", function(self, event, unit, message)
+    if event == "UI_ERROR_MESSAGE" then
+        -- Your cast bounced off a blessing the rank check thought it could replace: remember that one.
+        if not (lastCast and lastCast.guid) or issecret(message) or message ~= SPELL_FAILED_AURA_BOUNCED
+            or GetTime() - lastCast.t > 1 or UnitId("target") ~= lastCast.guid then
+            return
+        end
+        local f = (ScanBlessings("target") or {})[lastCast.key]
+        if not (f and f.expires) or f.mine or f.camp then return end
+        bounced[lastCast.guid .. ":" .. lastCast.key] = f.expires
+        lastCast = nil
+    end
     if event == "UNIT_AURA" and unit ~= "target" then return end
     if event == "PLAYER_TARGET_CHANGED" then current = nil end
     if event == "PLAYER_LOGIN" then
@@ -1089,7 +1120,8 @@ ev:SetScript("OnEvent", function(self, event, unit)
             AddFilter("CHAT_MSG_SAY", LinkTarget)
             AddFilter("CHAT_MSG_WHISPER_INFORM", LinkTarget)
         end
-        for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "UNIT_AURA", "SPELLS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }) do
+        for _, e in ipairs({ "PLAYER_TARGET_CHANGED", "UNIT_AURA", "SPELLS_CHANGED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD",
+            "UI_ERROR_MESSAGE" }) do
             self:RegisterEvent(e)
         end
         C_Timer.NewTicker(1, Update)

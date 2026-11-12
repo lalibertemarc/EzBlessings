@@ -1,7 +1,8 @@
 # EzBlessings
 
-## Unreleased
+## v1.13.2
 
+- **Thick dwarves** have more ways to open and close a line ("Hoots!", "Dinnae fash.", "For Ironforge!", "Dour times.") and use each one less often, so long chats repeat less. They also no longer tack a remark onto a question, or add Gaelic to a line that already has some.
 - **No speech over another paladin's blessing that won't budge.** When everything is covered and the button offers a "(refresh)", it now only does so when your rank is surely stronger than the other paladin's: an equal rank, or one it can't read, bounced with "A more powerful spell is already active" while your announce line still went out. And if a cast ever bounces anyway, the button remembers that blessing on that player and stays quiet about it until it drops.
 
 ## v1.13.1

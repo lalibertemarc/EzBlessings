@@ -1,5 +1,10 @@
 # EzBlessings
 
+## v1.13.3
+
+- **Whispers only for blessings that land.** With Announce set to whisper, the line now goes out once your blessing actually shows up on them, a moment after the cast. If it bounces with "A more powerful spell is already active" (camps can do this with nothing to see on the target), they get no whisper. `/say` still speaks on the press, as the game requires.
+- After such a bounce, the button marks that blessing "blocked (bounced)" on that player and suggests the next one.
+
 ## v1.13.2
 
 - **Thick dwarves** have more ways to open and close a line ("Hoots!", "Dinnae fash.", "For Ironforge!", "Dour times.") and use each one less often, so long chats repeat less. They also no longer tack a remark onto a question, or add Gaelic to a line that already has some.

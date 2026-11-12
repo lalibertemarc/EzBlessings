@@ -217,6 +217,9 @@ end
 -- "<GUID>:<key>" -> expirationTime of another paladin's blessing your cast bounced off ("A more powerful spell
 -- is already active"), so that blessing counts as stronger until it's recast or drops, whatever its rank says.
 local bounced = {}
+-- "<GUID>:<key>" -> GetTime() deadline: your cast of that blessing bounced off them with nothing of that kind in
+-- sight (Camp Benefits can do that with no camp object aura showing), so it counts as blocked until then.
+local unseen = {}
 
 local function UnitId(unit)
     local guid = UnitGUID(unit)
@@ -251,6 +254,17 @@ local function ScanBlessings(unit)
         local left = not found[key] and AuraLeft(unit, spellId)
         if left then found[key] = { camp = true, remaining = left > 0 and left or nil } end
     end
+    if guid then
+        for key in pairs(blessing) do
+            local id = guid .. ":" .. key
+            local deadline = unseen[id]
+            if deadline and (found[key] or deadline <= now) then
+                unseen[id] = nil
+            elseif deadline then
+                found[key] = { unseen = true, remaining = deadline - now }
+            end
+        end
+    end
     return found
 end
 
@@ -260,7 +274,7 @@ end
 -- can't be compared).
 local function Outranked(f, spellId)
     if not f then return false end
-    if f.camp or f.bounced then return true end
+    if f.camp or f.bounced or f.unseen then return true end
     local theirs, mine = f.power, power[spellId]
     if f.mine then return theirs ~= nil and mine ~= nil and theirs > mine end
     return not (theirs and mine and mine > theirs)
@@ -325,6 +339,7 @@ end
 
 -- Entry states: "missing", "expiring" (yours, about to drop), "mine", "other" (another paladin's),
 -- "camp" (a camp object gives it; nothing lands over it, never refreshed),
+-- "unseen" (your cast bounced off it lately with nothing of that kind in sight, see unseen),
 -- "unknown" (not learned), "lowlevel" (no rank you know fits the target's level),
 -- "nogroup" (group-only blessing, target not in your group).
 -- Entry: { key, state, spellId (rank to cast), source, remaining }
@@ -369,6 +384,8 @@ local function Evaluate(unit)
                 and "expiring" or "mine"
         elseif f and f.camp then
             state = "camp"
+        elseif f and f.unseen then
+            state = "unseen"
         elseif f then
             state = "other"
         elseif not anyKnown then
@@ -676,9 +693,11 @@ end
 
 -- The cast this press makes, so a "more powerful spell" error right after can be pinned on its blessing.
 local lastCast -- { key, guid, t }
+local waiting  -- whisper waiting for its blessing to land: { msg, name, class, guid, key, t, before }
 
 btn:SetScript("PreClick", function(self, button)
     local cast = self.casts and self.casts[button]
+    waiting = nil
     lastCast = cast and { key = cast.key, guid = UnitId("target"), t = GetTime() } or nil
     local channel = EzBlessingsDB.announce
     if not (channel == "say" or channel == "whisper") or ChatLocked() then return end
@@ -689,12 +708,52 @@ btn:SetScript("PreClick", function(self, button)
     local line = LineFor(cast, class)
     if not line then return end
     local msg = FormatMessage(line, name, cast and cast.name, cast and cast.source, Female("target"))
+    -- A whisper about a blessing waits until it's really on them: nothing visible tells a bounce apart beforehand
+    -- (Might bounced off one of five players at the same camp, 2026-11-12). /say needs the press, so it goes now.
+    if channel == "whisper" and cast and lastCast.guid and not EzBlessingsDB.whisperOnPress then
+        local found = ScanBlessings("target")
+        local f = found and found[cast.key]
+        waiting = { msg = msg, name = name, class = class, guid = lastCast.guid, key = cast.key, t = GetTime(),
+            before = f and f.mine and f.expires or nil }
+        return
+    end
     Remember(msg, name, class)
     if channel == "whisper" then
         SendChat(msg, "WHISPER", name)
     else
         SendChat(msg, "SAY")
     end
+end)
+
+-- Sends the waiting whisper once the blessing shows up on them from you (new, or a refresh with a later end).
+-- Dropped after ns.LAND_WAIT seconds, a bounce or another press. If the game blocks a whisper sent from an event
+-- (ADDON_ACTION_BLOCKED right after), EzBlessingsDB.whisperOnPress goes back to whispering on the press.
+local lateSentAt = -math.huge
+local watcher = CreateFrame("Frame")
+watcher:RegisterEvent("UNIT_AURA")
+watcher:RegisterEvent("ADDON_ACTION_BLOCKED")
+watcher:RegisterEvent("ADDON_ACTION_FORBIDDEN")
+watcher:SetScript("OnEvent", function(_, event, unit)
+    if event ~= "UNIT_AURA" then
+        if unit == "EzBlessings" and GetTime() - lateSentAt < 1 and not EzBlessingsDB.whisperOnPress then
+            EzBlessingsDB.whisperOnPress = true
+            DEFAULT_CHAT_FRAME:AddMessage("|cfff58cbaEzBlessings|r: the game blocked a whisper sent after the cast, "
+                .. "so whispers go out on the press again.")
+        end
+        return
+    end
+    local w = waiting
+    if not w then return end
+    if GetTime() - w.t > ns.LAND_WAIT then waiting = nil return end
+    if UnitId(unit) ~= w.guid then return end
+    local found = ScanBlessings(unit)
+    local f = found and found[w.key]
+    if not (f and f.mine and f.expires and (not w.before or f.expires > w.before + 1)) then return end
+    waiting = nil
+    if ChatLocked() then return end
+    Remember(w.msg, w.name, w.class)
+    lateSentAt = GetTime()
+    SendChat(w.msg, "WHISPER", w.name)
 end)
 
 ---------------------------------------------------------------------------
@@ -706,6 +765,7 @@ local STATE_TEXT = {
     mine     = "|cff40ff40yours|r",
     other    = "|cff40ff40from %s|r",
     camp     = "|cff40ff40from camp|r",
+    unseen   = "|cffffd000blocked (bounced)|r",
     unknown  = "|cff808080not learned|r",
     lowlevel = "|cff808080target too low|r",
     nogroup  = "|cff808080group only|r",
@@ -1074,14 +1134,25 @@ local ev = CreateFrame("Frame")
 ev:RegisterEvent("PLAYER_LOGIN")
 ev:SetScript("OnEvent", function(self, event, unit, message)
     if event == "UI_ERROR_MESSAGE" then
+        local isBounce = not issecret(message) and message == SPELL_FAILED_AURA_BOUNCED
         -- Your cast bounced off a blessing the rank check thought it could replace: remember that one.
-        if not (lastCast and lastCast.guid) or issecret(message) or message ~= SPELL_FAILED_AURA_BOUNCED
-            or GetTime() - lastCast.t > 1 or UnitId("target") ~= lastCast.guid then
+        if not isBounce or not (lastCast and lastCast.guid) or GetTime() - lastCast.t > 1
+            or UnitId("target") ~= lastCast.guid then
             return
         end
-        local f = (ScanBlessings("target") or {})[lastCast.key]
-        if not (f and f.expires) or f.mine or f.camp then return end
-        bounced[lastCast.guid .. ":" .. lastCast.key] = f.expires
+        waiting = nil
+        local found = ScanBlessings("target")
+        local f = found and found[lastCast.key]
+        local id = lastCast.guid .. ":" .. lastCast.key
+        if found and not f then
+            -- Nothing of that kind in sight (Camp Benefits can do this): blocked until their Camp Benefits drops.
+            local left = AuraLeft("target", ns.CAMP_BENEFITS)
+            unseen[id] = GetTime() + (left and left > 0 and left or ns.UNSEEN_KEEP)
+        elseif f and f.expires and not (f.mine or f.camp) then
+            bounced[id] = f.expires
+        else
+            return
+        end
         lastCast = nil
     end
     if event == "UNIT_AURA" and unit ~= "target" then return end
@@ -1091,6 +1162,7 @@ ev:SetScript("OnEvent", function(self, event, unit, message)
         EzBlessingsDB = EzBlessingsDB or {}
         EzBlessingsDB.tanks = EzBlessingsDB.tanks or {}
         EzBlessingsDB.messages = EzBlessingsDB.messages or {}
+        EzBlessingsDB.campDebug, EzBlessingsDB.debugLog = nil, nil -- left by removed debug code (camp bounces)
         -- Before random lines, /ezb message kept a single line here.
         if type(EzBlessingsDB.message) == "string" then
             table.insert(EzBlessingsDB.messages, EzBlessingsDB.message)

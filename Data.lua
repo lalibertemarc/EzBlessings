@@ -43,6 +43,17 @@ ns.CAMP = ns.ERA and {} or {
     WISDOM = 1230587, -- Mana Well
     MIGHT  = 1230164, -- Lodestone
 }
+-- The visible "Camp Benefits" buff everyone at a camp gets (60 min). Says nothing about blessings: at one camp, Might
+-- landed on four players with it and bounced off a fifth, with no Lodestone aura on anyone (2026-11-12). Only used to
+-- keep an unexplained bounce remembered while it lasts.
+ns.CAMP_BENEFITS = 1229741
+
+-- Seconds a cast that bounced off nothing visible keeps that blessing marked blocked on that player, when they
+-- have no Camp Benefits (with it: until it drops).
+ns.UNSEEN_KEEP = 600
+
+-- Seconds a whisper waits for its blessing to show up on the target before it's dropped.
+ns.LAND_WAIT = 3
 
 -- A rank can't be cast on a target more than this many levels below the level it's learned at.
 ns.RANK_LEVEL_GAP = 10

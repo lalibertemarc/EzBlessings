@@ -3,6 +3,17 @@
 ## Notes: Shows which Paladin blessing your friendly target needs. None go unblessed.
 ## Author: Marc
 ## Version: @project-version@
+## Category: Roleplay
+## Category-deDE: Rollenspiel
+## Category-esES: Juego de rol
+## Category-esMX: Juego de rol
+## Category-frFR: Jeu de rôle
+## Category-itIT: Gioco di Ruolo
+## Category-koKR: 롤플레잉
+## Category-ptBR: Interpretação de Papel
+## Category-ruRU: Ролевая игра
+## Category-zhCN: 角色扮演
+## Category-zhTW: 角色扮演
 ## IconTexture: Interface\Icons\Spell_Magic_GreaterBlessingofKings
 ## SavedVariables: EzBlessingsDB
 ## SavedVariablesPerCharacter: EzBlessingsCharDB

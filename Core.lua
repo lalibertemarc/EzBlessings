@@ -446,7 +446,10 @@ btn:SetFrameStrata("MEDIUM")
 btn:SetMovable(true)
 btn:SetClampedToScreen(true)
 btn:RegisterForDrag("LeftButton")
-btn:RegisterForClicks(GetCVarBool("ActionButtonUseKeyDown") and "AnyDown" or "AnyUp")
+-- Both halves: Blizzard's secure click then casts on a mouse click's release and on a key binding's press or release
+-- (per the CVar). Registering only the down half made a mouse press cast, so a Shift-drag to move the icon blessed and
+-- announced. Clicked (PreClick) mirrors that choice, and a drag empties the spell until its release has passed.
+btn:RegisterForClicks("AnyDown", "AnyUp")
 for _, suffix in ipairs({ "", "2" }) do
     btn:SetAttribute("type" .. suffix, "spell")
     btn:SetAttribute("unit" .. suffix, "target")
@@ -486,8 +489,33 @@ local function ApplyPosition()
     end
 end
 
+-- Whether this click is the half that casts, as SecureActionButton_OnClick decides it: a mouse click on its release
+-- (here also not after a drag), anything else (key binding, /click) on the press or release per the CVar. A down click
+-- with that mouse button held over the icon is the mouse.
+local function Clicked(b, button, down)
+    if down then
+        b.pressed = IsMouseButtonDown(button) and b:IsMouseOver() or false
+        b.dragged = false
+        if b.pressed then return false end
+        return GetCVarBool("ActionButtonUseKeyDown")
+    end
+    if b.pressed then
+        b.pressed = false
+        return not b.dragged
+    end
+    return not GetCVarBool("ActionButtonUseKeyDown")
+end
+
+local Update -- defined below; puts the spell back once a drag's release has passed
+
 btn:SetScript("OnDragStart", function(self)
     if InCombatLockdown() or (EzBlessingsDB.locked and not IsShiftKeyDown()) then return end
+    -- The release ending the drag still reaches the secure click: no spell, nothing cast. Update leaves it empty
+    -- while holding; out of combat here, so the attributes can change.
+    self.dragged, self.holding = true, true
+    self:SetAttribute("spell", nil)
+    self:SetAttribute("spell2", nil)
+    self.casts = nil
     self:StartMoving()
     self.moving = true
 end)
@@ -498,6 +526,12 @@ btn:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
     local point, _, relPoint, x, y = self:GetPoint()
     EzBlessingsDB.pos = { point, relPoint, x, y }
+    -- Next frame: the release click comes with this frame's mouse up. In combat by then, PLAYER_REGEN_ENABLED's
+    -- Update puts the spell back.
+    C_Timer.After(0, function()
+        self.holding = false
+        Update()
+    end)
 end)
 
 local current -- last Evaluate() result for the target, nil when no valid target
@@ -695,7 +729,8 @@ end
 local lastCast -- { key, guid, t }
 local waiting  -- whisper waiting for its blessing to land: { msg, name, class, guid, key, t, before }
 
-btn:SetScript("PreClick", function(self, button)
+btn:SetScript("PreClick", function(self, button, down)
+    if not Clicked(self, button, down) then return end
     local cast = self.casts and self.casts[button]
     waiting = nil
     lastCast = cast and { key = cast.key, guid = UnitId("target"), t = GetTime() } or nil
@@ -846,7 +881,7 @@ local function UpdateRange()
     end
 end
 
-local function Update()
+function Update()
     local inCombat = InCombatLockdown()
     local r = not InHiddenInstance() and ValidTarget("target") and Evaluate("target") or nil
     local hasRealResult = current and (current.stale or not current.hidden)
@@ -872,7 +907,8 @@ local function Update()
         local spell = current.spell
 
         -- Secure attributes can't change in combat; the button keeps its old spell until combat ends.
-        if not inCombat then
+        -- While a drag's release is still to come (holding) the spell stays empty.
+        if not inCombat and not btn.holding then
             btn:EnableMouse(true)
             btn:SetAttribute("spell", spell)
             btn:SetAttribute("spell2", current.greater or spell)

@@ -25,7 +25,7 @@ read_globals = {
     "GetBuildInfo", "GetSpellInfo", "GetSpellSubtext", "IsSpellKnown", "IsSpellInRange", "GetSpellCooldown", "IsUsableSpell", "SendChatMessage", "UnitBuff", "UnitClass", "UnitRace", "UnitSex", "UnitName", "UnitLevel",
     "UnitIsUnit", "UnitInParty", "UnitInRaid", "UnitExists", "UnitIsPlayer", "UnitIsFriend", "UnitIsDeadOrGhost", "GetGuildInfo",
     "UnitGUID", "GetUnitName", "GetNormalizedRealmName", "GetRealmName",
-    "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown", "IsMounted", "IsInInstance",
+    "GetTime", "GetCVarBool", "InCombatLockdown", "IsShiftKeyDown", "IsMouseButtonDown", "IsMounted", "IsInInstance",
     -- Other addons (optional)
     "OlympusMuteDB", "EzAccentAPI",
 }

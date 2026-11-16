@@ -3,6 +3,7 @@
 ## v1.13.4
 
 - **Moving the button no longer blesses.** Shift-dragging the button used to cast (and announce) the moment you pressed it. A mouse click now casts when you let go, like Blizzard's action bars, and not at all after a drag; your key binding works as before.
+- **Whispers no longer go missing.** Pressing twice quickly dropped the whisper of the blessing you'd just cast, and in combat (when the game hides buffs from addons) whispers never went out at all. A quick second press now leaves the first whisper alone, and in combat the whisper goes out on the press, as before 1.13.3.
 
 ## v1.13.3
 

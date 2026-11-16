@@ -732,7 +732,8 @@ local waiting  -- whisper waiting for its blessing to land: { msg, name, class, 
 btn:SetScript("PreClick", function(self, button, down)
     if not Clicked(self, button, down) then return end
     local cast = self.casts and self.casts[button]
-    waiting = nil
+    -- A waiting whisper is only replaced by this press's own line: a second tap inside the global cooldown says
+    -- nothing, and clearing it here dropped the first press's whisper before its blessing landed.
     lastCast = cast and { key = cast.key, guid = UnitId("target"), t = GetTime() } or nil
     local channel = EzBlessingsDB.announce
     if not (channel == "say" or channel == "whisper") or ChatLocked() then return end
@@ -745,9 +746,11 @@ btn:SetScript("PreClick", function(self, button, down)
     local msg = FormatMessage(line, name, cast and cast.name, cast and cast.source, Female("target"))
     -- A whisper about a blessing waits until it's really on them: nothing visible tells a bounce apart beforehand
     -- (Might bounced off one of five players at the same camp, 2026-11-12). /say needs the press, so it goes now.
-    if channel == "whisper" and cast and lastCast.guid and not EzBlessingsDB.whisperOnPress then
-        local found = ScanBlessings("target")
-        local f = found and found[cast.key]
+    -- While auras are hidden (combat) a landing can't be seen, so the whisper goes on the press then too.
+    waiting = nil
+    local found = channel == "whisper" and cast and ScanBlessings("target")
+    if found and lastCast.guid and not EzBlessingsDB.whisperOnPress then
+        local f = found[cast.key]
         waiting = { msg = msg, name = name, class = class, guid = lastCast.guid, key = cast.key, t = GetTime(),
             before = f and f.mine and f.expires or nil }
         return
@@ -761,7 +764,7 @@ btn:SetScript("PreClick", function(self, button, down)
 end)
 
 -- Sends the waiting whisper once the blessing shows up on them from you (new, or a refresh with a later end).
--- Dropped after ns.LAND_WAIT seconds, a bounce or another press. If the game blocks a whisper sent from an event
+-- Dropped after ns.LAND_WAIT seconds, a bounce or another press with a line of its own. If the game blocks a whisper sent from an event
 -- (ADDON_ACTION_BLOCKED right after), EzBlessingsDB.whisperOnPress goes back to whispering on the press.
 local lateSentAt = -math.huge
 local watcher = CreateFrame("Frame")
@@ -783,7 +786,8 @@ watcher:SetScript("OnEvent", function(_, event, unit)
     if UnitId(unit) ~= w.guid then return end
     local found = ScanBlessings(unit)
     local f = found and found[w.key]
-    if not (f and f.mine and f.expires and (not w.before or f.expires > w.before + 1)) then return end
+    -- Auras hidden since the press (combat began): their aura change is the best sign left that it landed.
+    if found and not (f and f.mine and f.expires and (not w.before or f.expires > w.before + 1)) then return end
     waiting = nil
     if ChatLocked() then return end
     Remember(w.msg, w.name, w.class)

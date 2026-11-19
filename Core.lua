@@ -446,10 +446,14 @@ btn:SetFrameStrata("MEDIUM")
 btn:SetMovable(true)
 btn:SetClampedToScreen(true)
 btn:RegisterForDrag("LeftButton")
--- Both halves: Blizzard's secure click then casts on a mouse click's release and on a key binding's press or release
--- (per the CVar). Registering only the down half made a mouse press cast, so a Shift-drag to move the icon blessed and
--- announced. Clicked (PreClick) mirrors that choice, and a drag empties the spell until its release has passed.
+-- Every click casts on its release (mouse, key binding, /click): useOnKeyDown false overrides the
+-- ActionButtonUseKeyDown CVar, which SecureActionButton_OnClick applies to an addon button's mouse clicks too (it can't
+-- tell them from key presses). Casting on the press made a Shift-drag to move the icon bless and announce, and a line
+-- said on the other half than the cast found the blessing already landed, so its whisper never went (2026-11-18).
+-- Both halves registered: key bindings send both, /click only the release. A drag empties the spell until its
+-- release has passed.
 btn:RegisterForClicks("AnyDown", "AnyUp")
+btn:SetAttribute("useOnKeyDown", false)
 for _, suffix in ipairs({ "", "2" }) do
     btn:SetAttribute("type" .. suffix, "spell")
     btn:SetAttribute("unit" .. suffix, "target")
@@ -489,21 +493,13 @@ local function ApplyPosition()
     end
 end
 
--- Whether this click is the half that casts, as SecureActionButton_OnClick decides it: a mouse click on its release
--- (here also not after a drag), anything else (key binding, /click) on the press or release per the CVar. A down click
--- with that mouse button held over the icon is the mouse.
-local function Clicked(b, button, down)
+-- Whether this click is the half that casts (the release, see useOnKeyDown above), and not the release ending a drag.
+local function Clicked(b, _, down)
     if down then
-        b.pressed = IsMouseButtonDown(button) and b:IsMouseOver() or false
         b.dragged = false
-        if b.pressed then return false end
-        return GetCVarBool("ActionButtonUseKeyDown")
+        return false
     end
-    if b.pressed then
-        b.pressed = false
-        return not b.dragged
-    end
-    return not GetCVarBool("ActionButtonUseKeyDown")
+    return not b.dragged
 end
 
 local Update -- defined below; puts the spell back once a drag's release has passed
@@ -529,7 +525,7 @@ btn:SetScript("OnDragStop", function(self)
     -- Next frame: the release click comes with this frame's mouse up. In combat by then, PLAYER_REGEN_ENABLED's
     -- Update puts the spell back.
     C_Timer.After(0, function()
-        self.holding = false
+        self.holding, self.dragged = false, false
         Update()
     end)
 end)
